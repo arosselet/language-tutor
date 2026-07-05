@@ -26,15 +26,30 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # A template clone ticks before it's set up — that's a valid state, not a
+      # failure. Skip clean (and cheap: before Python setup / pip install).
+      - name: Bootstrap gate
+        id: boot
+        run: |
+          if [ -f config/tutor.json ]; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "Not bootstrapped yet (config/tutor.json missing) — tick skipped. Run /setup to begin."
+          fi
       - uses: actions/setup-python@v5
+        if: steps.boot.outputs.ok == 'true'
         with:
           python-version: "3.12"
-      - run: pip install -r requirements.txt
+      - if: steps.boot.outputs.ok == 'true'
+        run: pip install -r requirements.txt
       - name: Write GCP credentials (google TTS only — secret may be empty)
+        if: steps.boot.outputs.ok == 'true'
         env:
           GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
         run: printf '%s' "$GCP_SA_KEY" > "$RUNNER_TEMP/gcp.json"
       - name: Tutor knocks
+        if: steps.boot.outputs.ok == 'true'
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           PUSH_WEBHOOK_URL: ${{ secrets.PUSH_WEBHOOK_URL }}
