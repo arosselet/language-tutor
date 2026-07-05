@@ -1,0 +1,6 @@
+[
+  {"register": "faq", "type": "chunk", "word": "<canonical spoken form, said whole>", "gloss": "<meaning + the situation it answers>", "phonetic": ["<what the learner types, if scripts differ>"], "recognition": "struggled"},
+  {"register": "antifreeze", "type": "chunk", "word": "<the say-it-slower / say-again survival line>", "gloss": "<meaning>", "phonetic": [], "recognition": "comfortable"},
+  {"register": "requests", "type": "frame", "word": "frame:want-noun", "gloss": "<the slot-fill pattern, described — cleared by a NOVEL slot-fill>", "recognition": "struggled"},
+  {"register": "ear", "type": "chunk", "word": "<a line the learner only needs to CATCH>", "gloss": "<meaning>", "direction": "catch", "recognition": "struggled"}
+]

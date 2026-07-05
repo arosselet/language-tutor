@@ -1,0 +1,19 @@
+# Generated content
+audio/
+temp_audio_segments/
+
+# Python
+__pycache__/
+*.pyc
+
+# OS
+.DS_Store
+
+# Secrets — never commit
+.env
+
+# NOTE (deliberate): config/tutor.json, protocol/persona.md, and progress/*.json
+# are TRACKED once setup creates them — state in git is how the tutor remembers
+# you across machines, and CI reads the persona + config. They contain personal
+# detail; choose a private repo if that matters more than a public podcast feed
+# (see README → publishing note).

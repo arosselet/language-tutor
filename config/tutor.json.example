@@ -1,0 +1,62 @@
+{
+  "_comment": "Example config — a learner of Mexican Spanish. The setup agent writes the real config/tutor.json from the interview (SETUP.md). Every key here is documented in docs/CUSTOMIZATION.md. The smoke test also uses this file as its fixture, so keep it valid.",
+
+  "learner": {
+    "name": "Alex",
+    "timezone": "America/New_York",
+    "native_language": "English"
+  },
+
+  "language": {
+    "name": "Spanish",
+    "dialect": "Mexican colloquial",
+    "script_name": "Spanish spelling",
+    "script_regex": null,
+    "chat_form": "plain Spanish spelling; accents optional — 'como estas' IS 'cómo estás'; judge the Spanish, not the diacritics",
+    "audio_form": "correct written Spanish with accents — a Spanish TTS voice speaks it",
+    "weave_rule": "English carries the logistics and scene-setting; Spanish carries the payload — the load-bearing word or phrase of the sentence is always Spanish",
+    "register_note": "natural spoken Mexican register — the way friends actually talk, never textbook formal"
+  },
+
+  "tutor": {
+    "name": "Tocayo",
+    "pronouns": "he/him",
+    "relationship": "the neighborhood friend who adopted you",
+    "voice_id": "es-MX-JorgeNeural"
+  },
+
+  "tts": {
+    "provider": "edge",
+    "language_code": "es-MX",
+    "voices": {
+      "google_chirp_male": [],
+      "google_chirp_female": [],
+      "google_wavenet_male": [],
+      "google_wavenet_female": [],
+      "edge_male": ["es-MX-JorgeNeural"],
+      "edge_female": ["es-MX-DaliaNeural"]
+    }
+  },
+
+  "feed": {
+    "repo": "yourname/your-tutor-repo",
+    "title": "My Spanish Feed",
+    "description": "AI-generated Spanish lessons. Colloquial Mexican register, dual-voice audio, built for daily life.",
+    "author": "Alex &amp; the tutor"
+  },
+
+  "outreach": {
+    "model": "anthropic/claude-sonnet-4.6",
+    "waking_start_hour": 8,
+    "waking_end_hour": 21,
+    "max_reaches_per_day": 5,
+    "min_gap_hours": 3
+  },
+
+  "deck": {
+    "name": "sprint",
+    "label": "Sprint Deck",
+    "deadline": null,
+    "deadline_label": "deadline"
+  }
+}

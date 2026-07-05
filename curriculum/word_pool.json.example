@@ -1,0 +1,5 @@
+[
+  {"word": "<canonical spoken form>", "gloss": "<native-language meaning>", "cluster": "connectors", "priority": 1},
+  {"word": "<canonical spoken form>", "gloss": "<native-language meaning>", "cluster": "verb_present", "priority": 1},
+  {"word": "<canonical spoken form>", "gloss": "<native-language meaning>", "cluster": "questions", "priority": 2}
+]

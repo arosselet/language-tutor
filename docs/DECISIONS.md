@@ -1,0 +1,87 @@
+# Settled Decisions (`@build` reference)
+
+Questions that were explored, decided, and closed — **seeded from the Tamil
+reference implementation** (months of daily use; see `docs/WORKED_EXAMPLE.md`),
+then continued by this repo's own learner. **Don't re-litigate these** — if new
+evidence genuinely reopens one, take it to the learner with the evidence; never
+silently drift. Append your own as they settle; every addition should state
+what it replaces.
+
+## How to work on this system
+
+- **LLM is the writer, Python is the brain.** Push reasoning into deterministic
+  code; keep the LLM's input surface small. Never hand-edit Python-owned JSON.
+- **Every addition must earn its place.** Before adding a file, field, rule, or
+  script, state what it replaces or simplifies — an addition that doesn't
+  simplify something else is suspect. The reference system's worst moments were
+  accumulation; its best moves were separations.
+- **Surgical edits to the relevant file.** Concerns are separated on purpose:
+  dialect problem → `dialect.md`, voice problem → `hosts.md`, word selection →
+  `suggest_targets.py`, variety → the scene spec. Never rewrite role files for
+  a one-off.
+- **Fix the tool, not the personality.** When the tutor seems dumb, forgetful,
+  or pushy, read the plumbing first — workflow logs, `knock_log.json`
+  timestamps — before touching persona or prompts. (Reference case: "the tutor
+  had no knowledge of my reply" was a same-tick multi-fire collision in the
+  push queue — 100% plumbing.)
+- **Structure freeze after bootstrap.** Rows of data are free; schema changes
+  wait. Route build-itches to `docs/feature_inbox.md`. (Canonical in
+  `docs/PROTOCOL_MAP.md`.)
+- **Lightweight triggers for lightweight actions.** When a request is "fire the
+  existing automation with one value," wire a shortcut/webhook one-liner —
+  don't route it through a full chat session.
+- **Calibration dials live in `progress/profile.md` → Calibration Notes** —
+  coverage %, new-word counts, pacing. Change the parameter; never encode a
+  dial's value in protocol prose or assistant memory.
+- **A fade is palatability data, not a discipline failure.** Contact is king
+  *only when the input is palatable and reliably varying*. When contact drops:
+  diagnose the grating first (too dense? too contrived? same scenario
+  re-run?); never answer a fade with accountability machinery.
+
+## Settled design decisions
+
+- **Absorption-first, then production-as-accelerant.** Pure comprehensible
+  input plateaued; forced cold output toward the **viability floor** is the
+  engine. Narrow and deepen; widen only after the floor.
+- **One persistent tutor is the single interactive front door.** Default mode,
+  no keyword. Text modalities are tools the tutor deploys; a tutor-menu
+  orchestrator was tried and retired.
+- **Continuity is prose memory, not a schema.** One running story carried in
+  `learner.json`'s `last_debrief`/`soak_order`, rewritten cumulatively by the
+  tutor. A thread-tracking schema (threads table, due-ness scoring) was built
+  and **rejected**. Python computes the *menu*; the tutor makes the *choice and
+  the meaning*.
+- **Narrative-saga continuity rejected.** Serialized fictional plot rings
+  hollow and fights "fresh situations, not repetition." Scenes are disposable
+  one-use pegs. The one true narrative is the learner's own arc; **climax =
+  mastery**.
+- **Variety is structural, not taste.** The scene-spec gate (register / form /
+  dramatic ingredient, divergence window 3) is a **gate, not a suggestion** —
+  taste-based variety is how sameness drifts back. The Breakdown is **colour,
+  not coverage** (never a glossary).
+- **The Producer owns the dialect transformation.** The Architect writes
+  plausible spoken register only; dialect rules never go in `architect.md`
+  (rule-budget crowding there makes episodes drill-shaped).
+- **Stop chasing listens.** The knock and each episode is a **self-contained
+  dose**; no listen-reconciliation ritual, no "press play" nudges, no streak
+  counters (a stored streak lies the moment a day is skipped). The
+  low-friction chat/phone rep is the loop; audio is the immersion tank.
+- **Knocks are read-only on session state.** They write only
+  `knock_log.json`; learning state advances only through interactive reps
+  (sessions, judged replies). Cold credit demands an *unrevealed* target —
+  text the notification showed caps at hinted, enforced in code.
+- **Outreach policy is the tutor's; Python holds only the rails.** Waking
+  hours, daily cap, min gap = deterministic gate; whether/how/when = the
+  tutor's decision, optimized for the learner *showing up*, never taps.
+  Silence is first-class; the busy/back-off social contract is real signal.
+- **Competent over local** (default register dial). Clear, correct standard
+  colloquial first; "pass as a local" is the long game, not the entry bar.
+- **Deck sprints for real deadlines.** A finite, informant-vetted deck is the
+  headline meter while a date looms; the abstract floor climb resumes after.
+- **Stories are curriculum (the lore pivot).** Anti-teacher bans
+  over-corrected into a scenario monoculture; language-lore (etymology /
+  kinship / myth / culture) is first-class *input* — an episode form, a chat
+  tangent, a knock dose. Guardrails: gate-rotated like any form; no production
+  debt; "No Academic Terms" bans terminology, never stories.
+- **CI git identity is `github-actions[bot]`** — never a noreply alias that
+  credits a real user.

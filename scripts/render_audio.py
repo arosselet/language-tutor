@@ -1,0 +1,477 @@
+#!/usr/bin/env python3
+"""
+Generate multi-voice podcast audio from a markdown script.
+
+Usage:
+    python scripts/render_audio.py <input_script.md> <output.mp3>
+
+Example:
+    python scripts/render_audio.py content/scripts/tier1_mission1.md audio/tier1_mission1.mp3
+
+Reads dialogues prefixed with **Speaker Name:**, generates TTS audio
+segments using edge-tts or Google Cloud TTS, and stitches them into a single
+MP3. Supports a # Voice Map block in markdown comments for explicit voice
+assignment. All voices and the TTS language code come from config/tutor.json.
+"""
+
+import re
+import os
+import asyncio
+import argparse
+import random
+import json
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+import ssl as _ssl
+
+import edge_tts
+import edge_tts.communicate as _edge_comm
+
+sys.path.insert(0, str(Path(__file__).parent))
+from config import VOICES, TTS_PROVIDER, TTS_LANGUAGE_CODE, is_target
+
+# Some environments use SSL inspection with self-signed certs.
+# Patch edge_tts's SSL context to skip cert verification.
+_no_verify_ctx = _ssl.create_default_context()
+_no_verify_ctx.check_hostname = False
+_no_verify_ctx.verify_mode = _ssl.CERT_NONE
+_edge_comm._SSL_CTX = _no_verify_ctx
+try:
+    from google.cloud import texttospeech
+    HAS_GOOGLE = True
+except ImportError:
+    HAS_GOOGLE = False
+
+# Voice pools — populated for the target language at setup (config/tutor.json →
+# tts.voices). Keeping male/female pools separate lets a script cast by the
+# (M)/(F) tag on each speaker line.
+_CHIRP_POOL_MALE = VOICES.get("google_chirp_male", [])
+_CHIRP_POOL_FEMALE = VOICES.get("google_chirp_female", [])
+_CHIRP_POOL = _CHIRP_POOL_MALE + _CHIRP_POOL_FEMALE
+
+_WAVENET_POOL_MALE = VOICES.get("google_wavenet_male", [])
+_WAVENET_POOL_FEMALE = VOICES.get("google_wavenet_female", [])
+_WAVENET_POOL = _WAVENET_POOL_MALE + _WAVENET_POOL_FEMALE
+
+_EDGE_POOL_MALE = VOICES.get("edge_male", [])
+_EDGE_POOL_FEMALE = VOICES.get("edge_female", [])
+_EDGE_POOL = _EDGE_POOL_MALE + _EDGE_POOL_FEMALE
+
+# Optional per-voice tuning for distinctiveness (Edge only):
+# {"<voice-id>": {"rate": "+0%", "pitch": "-5Hz"}} in config → tts.edge_voice_opts
+from config import TTS as _TTS
+EDGE_VOICE_OPTS = _TTS.get("edge_voice_opts", {})
+
+# Regex: matches "**Speaker:** text"
+SPEAKER_RE = re.compile(
+    r"^\s*(?:\*\s*)?\*\*\s*([^:]+)\s*:\s*(?:\*\*\s*)?(.*)", re.IGNORECASE
+)
+PAUSE_RE = re.compile(r"\[Pause:\s*(\d+)\s*sec.*\]", re.IGNORECASE)
+EMBED_RE = re.compile(r"\[Intercept (audio )?plays\]", re.IGNORECASE)
+VOICE_MAP_RE = re.compile(r"Voice Map\s*:\s*(\{.*?\})", re.DOTALL | re.IGNORECASE)
+
+def parse_script(file_path: str) -> tuple[list[dict], dict]:
+    """Parse a markdown script for dialogue lines, pauses, and voice mapping."""
+    with open(file_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    # Extract Voice Map from comments if present
+    voice_map = {}
+    map_match = VOICE_MAP_RE.search(content)
+    if map_match:
+        try:
+            voice_map = json.loads(map_match.group(1))
+            print(f"✅ Found explicit Voice Map: {voice_map}")
+        except json.JSONDecodeError:
+            print("⚠️ Warning: Failed to parse Voice Map JSON.")
+
+    lines = content.splitlines()
+    dialogue = []
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+
+        pause_match = PAUSE_RE.search(line)
+        if pause_match:
+            seconds = int(pause_match.group(1))
+            dialogue.append({"speaker": "PAUSE", "seconds": seconds})
+            continue
+
+        if EMBED_RE.search(line):
+            dialogue.append({"speaker": "EMBED_INTERCEPT"})
+            continue
+
+        if line == "---":
+            dialogue.append({"speaker": "PAUSE", "seconds": 1})
+            continue
+
+        match = SPEAKER_RE.match(line)
+        if match:
+            speaker = match.group(1).strip().upper()
+            text = match.group(2).strip()
+
+            if text:
+                dialogue.append({"speaker": speaker, "text": text})
+
+    # Coalesce consecutive pauses
+    final_dialogue = []
+    for item in dialogue:
+        if item["speaker"] == "PAUSE":
+            if final_dialogue and final_dialogue[-1]["speaker"] == "PAUSE":
+                final_dialogue[-1]["seconds"] += item["seconds"]
+            else:
+                final_dialogue.append(item)
+        else:
+            final_dialogue.append(item)
+
+    return final_dialogue, voice_map
+
+
+def clean_for_tts(text: str) -> str:
+    """Clean text for TTS consumption."""
+    text = re.sub(r"\s*\(.*?\)\s*", " ", text)
+    text = re.sub(r"\s*\[.*?\]\s*", " ", text)
+    replacements = {"JSON": "jay-son", "CLI": "C-L-I"}
+    for word, phonetic in replacements.items():
+        text = re.sub(rf"\b{word}\b", phonetic, text, flags=re.IGNORECASE)
+    text = text.replace(".", "")
+    text = re.sub(r"[*_#`]", "", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
+
+
+async def generate_segment_edge(text: str, voice: str, index: int, temp_dir: str) -> str:
+    """Generate a single audio segment using edge-tts."""
+    import aiohttp as _aiohttp
+    opts = EDGE_VOICE_OPTS.get(voice, {"rate": "+0%", "pitch": "+0Hz"})
+    connector = _aiohttp.TCPConnector(ssl=False)
+    communicate = edge_tts.Communicate(text, voice, rate=opts["rate"], pitch=opts["pitch"], connector=connector)
+    filename = os.path.join(temp_dir, f"segment_{index:04d}.mp3")
+    await communicate.save(filename)
+    await connector.close()
+    return filename
+
+
+async def generate_segment_google(text: str, voice: str, index: int, temp_dir: str, max_retries: int = 5) -> str:
+    """Generate a single audio segment using Google Cloud TTS with exponential backoff."""
+    client = texttospeech.TextToSpeechClient()
+    input_text = texttospeech.SynthesisInput(text=text)
+    voice_params = texttospeech.VoiceSelectionParams(language_code=TTS_LANGUAGE_CODE, name=voice)
+    audio_config = texttospeech.AudioConfig(audio_encoding=texttospeech.AudioEncoding.MP3, sample_rate_hertz=24000)
+    for attempt in range(max_retries):
+        try:
+            response = client.synthesize_speech(input=input_text, voice=voice_params, audio_config=audio_config)
+            filename = os.path.join(temp_dir, f"segment_{index:04d}.mp3")
+            with open(filename, "wb") as out:
+                out.write(response.audio_content)
+            return filename
+        except Exception as e:
+            if attempt == max_retries - 1:
+                raise
+            wait = 2 ** attempt + random.random()
+            print(f"   ⚠️ Retry {attempt+1}/{max_retries} after {wait:.1f}s — {e}")
+            time.sleep(wait)
+
+
+def get_raw_mp3_frames(filepath: str) -> bytes:
+    """Extract raw MPEG audio chunk."""
+    with open(filepath, "rb") as f:
+        data = f.read()
+    offset = 0
+    if data.startswith(b"ID3"):
+        size = (data[6] << 21) | (data[7] << 14) | (data[8] << 7) | data[9]
+        offset = 10 + size
+    if offset < len(data) - 1 and data[offset] == 0xFF and (data[offset+1] & 0xE0) == 0xE0:
+        padding = (data[offset+2] & 0x02) >> 1
+        frame_len = 144 + padding
+        frame_data = data[offset:offset+frame_len]
+        if b"Xing" in frame_data or b"Info" in frame_data:
+            offset += frame_len
+    end_offset = len(data)
+    if end_offset >= 128 and data[-128:].startswith(b"TAG"):
+        end_offset -= 128
+    return data[offset:end_offset]
+
+
+import base64
+SILENCE_FRAME_B64 = "//NkxJoiPA4Vgc1AAVXPcXO05CbzflKqdX8LXO/PQy7v6mbnkYz3BsVdxH7xI1psbFEYzt6Fxl0w17Szht3EmOWRKhJANxpojDXhk+E+3qNp+0+oomHuYca0xPxKUOihtdfcvPB+yzd2o2Sbh5zuLHVDDK9juB8rHhbq9lYT0XEdvYWKCGEeTvz8YP2XWipB"
+SILENCE_FRAME = base64.b64decode(SILENCE_FRAME_B64)
+
+def assign_voices(dialogue, voice_map, provider, voice_type):
+    """
+    Assign voices to speakers.
+    Uses a random selection from the pool for each name encountered.
+    Supports (M) or (F) in the speaker name for explicit gender casting.
+    """
+    speakers = set(d["speaker"] for d in dialogue if d["speaker"] != "PAUSE" and d["speaker"] != "EMBED_INTERCEPT")
+
+    assigned = {}
+
+    # 1. Respect explicit map (overrides)
+    for speaker, voice in voice_map.items():
+        assigned[speaker.upper()] = voice
+
+    # 2. Select pool
+    if provider == "google":
+        pool_male = list(_CHIRP_POOL_MALE if voice_type == "chirp" else _WAVENET_POOL_MALE)
+        pool_female = list(_CHIRP_POOL_FEMALE if voice_type == "chirp" else _WAVENET_POOL_FEMALE)
+        pool_any = list(_CHIRP_POOL if voice_type == "chirp" else _WAVENET_POOL)
+    else:
+        pool_male = list(_EDGE_POOL_MALE)
+        pool_female = list(_EDGE_POOL_FEMALE)
+        pool_any = list(_EDGE_POOL)
+
+    if not pool_any:
+        raise SystemExit(
+            f"No {provider} voices configured for this language — populate "
+            "config/tutor.json → tts.voices (see SETUP.md → TTS voices)."
+        )
+
+    available_male = [v for v in pool_male if v not in assigned.values()]
+    if not available_male: available_male = list(pool_male)
+    random.shuffle(available_male)
+
+    available_female = [v for v in pool_female if v not in assigned.values()]
+    if not available_female: available_female = list(pool_female)
+    random.shuffle(available_female)
+
+    available_any = [v for v in pool_any if v not in assigned.values()]
+    if not available_any: available_any = list(pool_any)
+    random.shuffle(available_any)
+
+    for s in sorted(list(speakers)):
+        s_upper = s.upper()
+        if s_upper not in assigned:
+            if ("(M)" in s_upper or "(MALE)" in s_upper) and pool_male:
+                assigned[s_upper] = available_male.pop() if available_male else random.choice(pool_male)
+            elif ("(F)" in s_upper or "(FEMALE)" in s_upper) and pool_female:
+                assigned[s_upper] = available_female.pop() if available_female else random.choice(pool_female)
+            else:
+                assigned[s_upper] = available_any.pop() if available_any else random.choice(pool_any)
+
+    return assigned
+
+def register_mission_in_state(script_path: Path, mp3_path: Path):
+    """
+    Registers a new mission in progress/episodes.json.
+    """
+    EPISODES_PATH = Path("progress/episodes.json")
+
+    def load_json(path: Path):
+        if not path.exists(): return {}
+        with open(path, "r", encoding="utf-8") as f: return json.load(f)
+
+    def save_json(path: Path, data):
+        with open(path, "w", encoding="utf-8") as f: json.dump(data, f, ensure_ascii=False, indent=2)
+
+    def get_duration(p: Path) -> float:
+        try:
+            res = subprocess.run(["ffprobe", "-v", "quiet", "-show_entries", "format=duration", "-of", "json", str(p)], capture_output=True, text=True)
+            return float(json.loads(res.stdout)["format"]["duration"]) / 60
+        except: return 3.0
+
+    # Extract title and words from script
+    with open(script_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    title_match = re.search(r"^# Tier \d+, Mission \d+ — (.*)$", content, re.M)
+    title = title_match.group(1) if title_match else f"Mission {script_path.stem}"
+    # Prefer the structured .tags.json sidecar (canonical vocab: new words +
+    # callbacks). Fall back to scraping bold target-script tokens only when no
+    # sidecar exists.
+    # Canonical-at-write, same law as sync_state: every key that lands in
+    # episodes.json / seen_in must resolve to a lexicon record, or be a genuinely
+    # new canonical-script payload word. A Producer annotation like
+    # "frame:want-noun (<script>)" must credit frame:want-noun — not spawn a ghost.
+    lexicon = load_json(Path("progress/lexicon.json"))
+    phon = {p: w for w, r in lexicon.items() for p in r.get("phonetic", [])}
+
+    def canonical(w: str) -> str | None:
+        """Resolve a sidecar key to its lexicon key, tolerating a trailing
+        ' (…)' annotation. None if nothing resolves."""
+        for cand in (w, re.sub(r"\s*\([^)]*\)\s*$", "", w).strip()):
+            if cand in lexicon:
+                return cand
+            if cand in phon:
+                return phon[cand]
+        return None
+
+    cleaned_words = []
+    new_word_keys = set()
+    tags_path = script_path.with_suffix(".tags.json")
+    if tags_path.exists():
+        try:
+            tags = json.loads(tags_path.read_text(encoding="utf-8"))
+            for bucket in ("new_words_landed", "callbacks_used"):
+                for w in tags.get(bucket, {}):
+                    key = canonical(w)
+                    if key is None:
+                        base = re.sub(r"\s*\([^)]*\)\s*$", "", w).strip()
+                        if base.startswith("frame:"):
+                            # Frames are seeded via add-pattern / seed-deck, never
+                            # born in a render — an unresolvable one is a sidecar
+                            # typo, and creating it would poison the word axes.
+                            print(f"   ! sidecar frame '{w}' resolves to no lexicon pattern — skipped")
+                            continue
+                        key = base  # may be a brand-new payload word (created below)
+                    if key not in cleaned_words:
+                        cleaned_words.append(key)
+                        if bucket == "new_words_landed":
+                            new_word_keys.add(key)
+        except (json.JSONDecodeError, OSError):
+            pass
+    if not cleaned_words:
+        for w in re.findall(r"\*\*([^\*]+)\*\*", content):
+            token = re.split(r"[\(\s]", w)[0]
+            if token and is_target(token) and ":" not in w and token not in cleaned_words:
+                cleaned_words.append(token)
+
+    mission_match = re.search(r"mission(\d+)", script_path.name)
+    if not mission_match: return
+    mission_num = mission_match.group(1)
+
+    episodes = load_json(EPISODES_PATH)
+    duration = get_duration(mp3_path)
+
+    if mission_num not in episodes:
+        episodes[mission_num] = {
+            "title": title, "listens": 0, "words": cleaned_words, "duration_min": duration
+        }
+        print(f"✅ Registered Mission {mission_num} in episodes.json")
+    else:
+        episodes[mission_num].update({
+            "title": title, "words": cleaned_words, "duration_min": duration
+        })
+        print(f"✅ Updated Mission {mission_num} metadata in episodes.json")
+
+    save_json(EPISODES_PATH, episodes)
+
+    # Provenance bridge: record that these declared words appeared in this episode.
+    # seen_in is pure provenance (which episodes a word is in); recency (last_surfaced)
+    # is bumped when the episode is actually listened to, via sync_state --listened.
+    # (lexicon + phon were loaded above; cleaned_words are already canonical.)
+    if lexicon:
+        mnum = int(mission_num)
+        tagged = 0
+        created = 0
+        for w in cleaned_words:
+            key = w if w in lexicon else phon.get(w)
+            if key is None and w in new_word_keys and is_target(w):
+                # Brand-new payload word: introduce it at the bottom of the
+                # recognition ladder — heard, not yet known, so it stays below
+                # the fence until the tutor observes recognition. gloss/phonetic
+                # backfill later, the same as sync_state's set_recognition.
+                lexicon[w] = {
+                    "gloss": "", "phonetic": [], "recognition": "struggled",
+                    "production": "none", "seen_in": [mnum], "last_surfaced": None,
+                }
+                created += 1
+                continue
+            if key:
+                seen = lexicon[key].setdefault("seen_in", [])
+                if mnum not in seen:
+                    seen.append(mnum)
+                    seen.sort()
+                    tagged += 1
+        if tagged or created:
+            save_json(Path("progress/lexicon.json"), lexicon)
+            msg = f"   ↳ tagged {tagged} lexicon words seen_in M{mnum}"
+            if created:
+                msg += f"; +{created} NEW words registered (recognition=struggled, gloss empty — backfill later)"
+            print(msg)
+
+async def main():
+    parser = argparse.ArgumentParser(description="Generate multi-voice podcast audio")
+    parser.add_argument("input_file", help="Input markdown script")
+    parser.add_argument("output_file", help="Output MP3 file")
+    parser.add_argument("--provider", choices=["edge", "google"], default=TTS_PROVIDER,
+                        help=f"TTS provider (default from config: {TTS_PROVIDER})")
+    parser.add_argument("--voice-type", choices=["chirp", "wavenet"], default="chirp", help="Google voice tier (default: chirp)")
+    args = parser.parse_args()
+
+    print(f"📖 Parsing {args.input_file}...")
+    dialogue, voice_map = parse_script(args.input_file)
+    if not dialogue:
+        print("❌ No dialogue lines found!")
+        return
+
+    speaker_assignments = assign_voices(dialogue, voice_map, args.provider, args.voice_type)
+    print(f"🎭 Cast Assignments:")
+    for s, v in speaker_assignments.items():
+        print(f"   - {s}: {v}")
+
+    temp_dir = "temp_audio_segments"
+    os.makedirs(temp_dir, exist_ok=True)
+    os.makedirs(os.path.dirname(args.output_file) or ".", exist_ok=True)
+
+    print("🎙️ Generating audio segments...")
+    final_audio_data = bytearray()
+
+    for i, line in enumerate(dialogue):
+        speaker = line["speaker"]
+        if speaker == "PAUSE":
+            seconds = line.get("seconds", 1)
+            final_audio_data.extend(SILENCE_FRAME * int(seconds * 41.666))
+            continue
+
+        if speaker == "EMBED_INTERCEPT":
+            print(f"   [{i+1}/{len(dialogue)}] ⚠️ Skipping [Intercept audio plays] — deprecated in single-script mode")
+            continue
+
+        voice = speaker_assignments.get(speaker)
+        clean_text = clean_for_tts(line["text"])
+        if not clean_text: continue
+
+        print(f"   [{i+1}/{len(dialogue)}] {speaker} ({voice}): {clean_text[:40]}...")
+
+        if args.provider == "google":
+            seg_file = await generate_segment_google(clean_text, voice, i, temp_dir)
+        else:
+            seg_file = await generate_segment_edge(clean_text, voice, i, temp_dir)
+
+        final_audio_data.extend(get_raw_mp3_frames(seg_file))
+        final_audio_data.extend(SILENCE_FRAME * 21) # ~500ms breath between lines
+        os.remove(seg_file)
+
+    # Save outputs
+    for folder in ["audio", "published_audio"]:
+        os.makedirs(folder, exist_ok=True)
+        path = os.path.join(folder, os.path.basename(args.output_file))
+        with open(path, "wb") as f:
+            f.write(final_audio_data)
+        print(f"💾 Saved → {path}")
+
+    os.rmdir(temp_dir)
+    print(f"✅ Success! ({len(final_audio_data)/(1024*1024):.1f} MB)")
+
+    # Lifecycle hooks
+    try:
+        # Register the mission in episodes.json + stamp seen_in into the lexicon
+        register_mission_in_state(Path(args.input_file), Path(args.output_file))
+
+        subprocess.run([sys.executable, "scripts/rebuild_rss.py"], check=True)
+
+        # The .tags.json sidecar is load-bearing (the divergence gate reads it
+        # next episode) and the brief is the Director's record — stage both.
+        tags_file = Path(args.input_file).with_suffix(".tags.json")
+        extra = [str(tags_file)] if tags_file.exists() else []
+        subprocess.run(["git", "add",
+                        "published_audio/", "rss.xml",
+                        "progress/episodes.json", "progress/lexicon.json",
+                        "content/lessons/",
+                        str(args.input_file), *extra], check=True)
+
+        status = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True)
+        if status.stdout.strip():
+            subprocess.run(["git", "commit", "-m", f"Add lesson: {os.path.basename(args.output_file)} and update state"], check=True)
+            subprocess.run(["git", "push"], check=True)
+
+    except Exception as e:
+        print(f"⚠️ Lifecycle hooks failed: {e}")
+
+if __name__ == "__main__":
+    asyncio.run(main())

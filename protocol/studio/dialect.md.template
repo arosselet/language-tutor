@@ -1,0 +1,54 @@
+# Protocol: Spoken [Language] — [Dialect/Region]
+
+> **SETUP AGENT: this is a synthesis template.** Write the live file to
+> `protocol/studio/dialect.md`: the concrete written-form → spoken-form
+> transformation rules for the target dialect, with real examples in the
+> canonical script. This is the Producer's toolbox — every rule must be
+> mechanical enough to apply line-by-line. Derive it from what you know of the
+> dialect, flag anything uncertain for the learner's native informant to vet,
+> and expect this file to sharpen over time (it is the most
+> living file in the language pack). Delete every guidance blockquote.
+
+> **Read by:** `protocol/studio/producer.md` — owner of the dialect transformation. The Architect does not read this file; the Producer rewrites Architect drafts to this register before TTS.
+> **Language-specific:** synthesized at setup; the roles that reference it do not change.
+
+The test for every line: *[Synthesize the one-line shorthand test — e.g. "Would a Coimbatore auto driver say this to his friend?" Pick this dialect's equivalent: a specific, vivid native speaker.]* If it sounds like a textbook or a newsreader, it needs work.
+
+---
+
+## Code-Switching Register
+
+[Synthesize: where, if anywhere, the learner's native language naturally appears inside this register — which domains (tech, work, urban nouns), at what boundaries (clause-level? not at all?), and what hybrid forms do NOT exist in real speech and must be rewritten. If this dialect doesn't code-switch, say so plainly: every utterance stays pure target language, and native-language scaffolding lives only *between* utterances.]
+
+---
+
+## [Transformation Family 1 — e.g. Verb Form Simplification]
+
+[Synthesize: how the written/formal forms collapse in speech, as a table of
+written → spoken pairs in canonical script. 4–8 rows.]
+
+---
+
+## [Transformation Family 2 — e.g. Fusion / Elision / Liaison]
+
+[Synthesize: how words fuse or reduce in fast speech, with examples. If a line reads like independently-pronounced dictionary words, it is written language, not spoken.]
+
+---
+
+## [Transformation Family 3 — e.g. Pronoun & Particle Drop]
+
+[Synthesize: what natives omit because morphology or context carries it.]
+
+---
+
+## Discourse Markers
+
+Real speech has rhythm and filler. Repetition for emphasis is natural and signals a real person, not a script.
+
+Common markers: [synthesize the list in canonical script — the "yeah / right / look / you know" set of this dialect].
+
+---
+
+## The Regional Layer
+
+[Synthesize: the specific features that make it THIS region and not the capital/prestige dialect — suffixes, contractions, vocabulary tells. Name the reference ear: which analyst from `hosts.md` embodies this layer — if that analyst would not say it, it is not local enough. If the learner chose "competent over hyper-local," keep this layer light: clear standard colloquial first, regional color as seasoning.]

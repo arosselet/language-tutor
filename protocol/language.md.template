@@ -1,0 +1,73 @@
+# Language Charter: [Language] — [Dialect/Region]
+
+> **SETUP AGENT: this is a synthesis template.** During bootstrap you derive the
+> letter of the two language-culture-dependent rules for the target language and
+> write the result to `protocol/language.md` (drop the `.template` suffix; keep
+> this template file untouched for re-derivation). Every bracketed slot gets real
+> content; every guidance blockquote (like this one) is deleted from the output.
+> The four prompt fragments in `config/tutor.json` → `language` must agree with
+> what you write here — this file is the prose home of the same decisions.
+>
+> **Worked example:** the Tamil instantiation of this file is summarized in
+> `docs/WORKED_EXAMPLE.md` — read it before deriving, not to copy, but to see
+> how concrete the letter must get.
+
+## The Target Register
+
+[2–4 sentences naming the exact register the system teaches: the dialect, the
+region, what it sounds like, and what is explicitly ignored (literary register,
+textbook forms, a prestige dialect the learner doesn't need). Include 3–5
+example contrasts: "say X, never textbook Y."]
+
+> Guidance: this is the register the learner will actually hear at their table /
+> destination. When the interview surfaced a specific region, commit to it. If
+> the learner said "competent over hyper-local," say so here — clear, correct
+> standard colloquial first, local color as the long game.
+
+## The Weave Rule (the letter)
+
+The universal rule (constitution): *the native language carries the scaffolding;
+the target language carries the payload — target the register natives actually
+speak, and use the learner's L1 as scaffolding however that register permits.*
+
+For [Language], that means:
+
+[Derive honestly. The key question: **is code-switching with the learner's L1
+native to the target register?** If yes (e.g. English inside spoken Tamil or
+Hinglish or Taglish): using L1 nouns is *authentic* — name which word classes
+stay L1 and why pure-target equivalents would mark the learner as a scholar. If
+no (e.g. French, Japanese — where dropping English nouns in marks you as a
+tourist): the weave lives at the *sentence* level — L1 sets the scene between
+utterances, but each target-language utterance is pure and complete. State the
+rule in 3–5 bullets a lesson-writer can apply mechanically.]
+
+## The Modality Split (the letter)
+
+The universal rule (constitution): *the learner types the lowest-friction form;
+audio uses what TTS needs; the system validates the learner's approximation.*
+
+For [Language]:
+
+- **Chat (learner types):** [e.g. "phonetic Latin transliteration — 'poren' IS
+  போறேன்; never demand native script" / "plain spelling, accents optional —
+  'como estas' is accepted" / "pinyin with or without tone marks; hanzi never
+  demanded"]
+- **Audio / TTS (system writes):** [e.g. "native script only" / "correct
+  orthography with diacritics" — this is what `config/tutor.json → language.audio_form` says]
+- **Canonical lexicon keys:** [native script / standard orthography — matches
+  `config/tutor.json → language.script_regex`. If the language shares the
+  learner's script, say the split collapses: typed form = canonical form.]
+
+## Spoken-Register Mechanics (summary)
+
+[3–6 bullets naming the big spoken-vs-written phenomena a lesson-writer must
+know exist — verb-form collapse, fusion/elision, dropped pronouns, discourse
+markers, politeness registers. Just the map; the full transformation rules live
+in `protocol/studio/dialect.md`, which the Producer applies.]
+
+## Lore Veins Worth Mining
+
+[3–5 true, hooky directions for the lore rule in this language — loanword
+history, cousin languages, what English (or the L1) borrowed from it, a naming
+custom, a register quirk with a cultural story. These seed the tutor's tangents
+and the `lore` episode form.]
