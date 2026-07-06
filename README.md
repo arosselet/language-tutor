@@ -19,7 +19,10 @@ heritage speaker, a Kansai-Japanese sempai for an exam sprint.
 **The worked example:** this template was extracted from
 [tamil-tutor](https://github.com/arosselet/tamil-tutor), a real system in daily
 use for months. `docs/WORKED_EXAMPLE.md` distills how each template elaborated
-there; `docs/DECISIONS.md` seeds the lessons it learned the hard way.
+there; `docs/DECISIONS.md` seeds the lessons it learned the hard way. This
+snapshot elaborates tamil-tutor at tag `template-v1-source`; the reference
+implementation moves ahead of it, and the template re-syncs by wholesale
+re-extraction at stable milestones — not per-fix backports.
 
 ## Quick start
 
