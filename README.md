@@ -16,6 +16,14 @@ elaborates into many shapes — a Coimbatore-Tamil elder brother for an engineer
 married into a Tamil family, a Mexican-Spanish neighborhood friend for a
 heritage speaker, a Kansai-Japanese sempai for an exam sprint.
 
+**Hear it first (6 min):** [`welcome.mp3`](published_audio/welcome.mp3) — two
+hosts and four languages explain what this is, what to expect, and why it isn't
+another app you'll quietly abandon. Transcript:
+[`content/scripts/welcome.md`](content/scripts/welcome.md).
+<!-- Inline player: attach the welcome video (this audio + album art, see the
+     script header) through the GitHub web editor and put the resulting
+     user-attachments URL here on its own line — GitHub renders it as a player. -->
+
 **The worked example:** this template was extracted from
 [tamil-tutor](https://github.com/arosselet/tamil-tutor), a real system in daily
 use for months. `docs/WORKED_EXAMPLE.md` distills how each template elaborated
