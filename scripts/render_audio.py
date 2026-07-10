@@ -131,6 +131,28 @@ def parse_script(file_path: str) -> tuple[list[dict], dict]:
     return final_dialogue, voice_map
 
 
+def defang_hyphens(text: str) -> str:
+    """TTS voices a hyphen glued to a word as 'minus' ('-suffix' → 'minus suffix')."""
+    return re.sub(r"-(?=\w)|(?<=\w)-", " ", text)
+
+
+def clean_memo_for_tts(text: str) -> str:
+    """Clean a narrated memo paragraph for TTS (the knock's audio/eavesdrop doses).
+
+    Preserves the target script (the TTS voice renders it correctly) and preserves
+    periods (memo prose needs them). Strips markdown formatting and collapses
+    internal newlines (single-\\n example lists from the LLM land in one TTS call
+    and confuse the voice)."""
+    # Detach hyphens glued to words — a glued '-suffix' gets voiced as 'minus suffix'
+    text = defang_hyphens(text)
+    # Markdown bold/italic/code — asterisks get voiced or disrupt TTS parsing
+    text = re.sub(r"[*_#`]", "", text)
+    # Collapse internal newlines (single-\n within a paragraph) to spaces
+    text = text.replace("\n", " ")
+    text = re.sub(r"\s{2,}", " ", text).strip()
+    return text
+
+
 def clean_for_tts(text: str) -> str:
     """Clean text for TTS consumption."""
     text = re.sub(r"\s*\(.*?\)\s*", " ", text)
@@ -140,6 +162,7 @@ def clean_for_tts(text: str) -> str:
         text = re.sub(rf"\b{word}\b", phonetic, text, flags=re.IGNORECASE)
     text = text.replace(".", "")
     text = re.sub(r"[*_#`]", "", text)
+    text = defang_hyphens(text)
     text = re.sub(r"\s+", " ", text).strip()
     return text
 

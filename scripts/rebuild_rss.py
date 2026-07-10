@@ -5,8 +5,14 @@ Rebuild rss.xml from published_audio/ — the podcast feed.
 Feed identity (title, description, author) and the serving URLs come from
 config/tutor.json → feed. Audio is served raw off the repo's main branch, so
 the repo must be PUBLIC for podcast apps to fetch it (see SETUP.md → publishing
-trade-offs). Episodes are tierX_missionY.mp3; drill tracks are drill_<date>.mp3.
+trade-offs). Episodes are tierX_missionY.mp3; drill tracks are drill_<date>.mp3;
+knock memos live in published_audio/knocks/ and land on the feed too (the push
+notification is ephemeral; the feed is where a dismissed audio dose is found
+again). Existing items keep their pubDate across rebuilds — os.path.getmtime()
+on a CI runner is the checkout time, so re-deriving dates stamps everything
+"now".
 """
+import json
 import os
 import re
 import sys
@@ -92,6 +98,29 @@ def clean_title(raw_title: str, filename: str) -> str:
     return filename.replace(".mp3", "").replace("_", " ").title()
 
 
+def knock_move_labels():
+    """Map an mp3 path relative to AUDIO_DIR ("knocks/knock_….mp3") -> the tutor's
+    move label from the knock log, so feed titles say what the memo was, not just when."""
+    try:
+        with open("progress/knock_log.json", encoding="utf-8") as f:
+            entries = json.load(f)
+        return {e["mp3"].split(f"{AUDIO_DIR}/", 1)[-1]: e.get("move") or ""
+                for e in entries if e.get("mp3")}
+    except Exception:
+        return {}
+
+
+def knock_title(filename: str, moves: dict) -> str:
+    """"knocks/knock_2026-07-05T22-58.mp3" -> "Knock — 2026-07-05 22:58 · <move>"."""
+    base = os.path.basename(filename)
+    m = re.match(r"knock_(\d{4}-\d{2}-\d{2})(?:T(\d{2})-(\d{2}))?", base)
+    when = base.replace(".mp3", "")
+    if m:
+        when = f"{m.group(1)} {m.group(2)}:{m.group(3)}" if m.group(2) else m.group(1)
+    move = moves.get(filename, "")
+    return f"Knock — {when} · {move}" if move else f"Knock — {when}"
+
+
 def get_title_from_md(md_path):
     if not os.path.exists(md_path):
         return None
@@ -102,7 +131,26 @@ def get_title_from_md(md_path):
     return os.path.basename(md_path)
 
 
+def existing_pub_dates():
+    """Return {guid_url: pubDate} from the current rss.xml so rebuilds don't clobber old dates."""
+    if not os.path.exists(RSS_FILE):
+        return {}
+    try:
+        import xml.etree.ElementTree as ET
+        root = ET.parse(RSS_FILE).getroot()
+        result = {}
+        for item in root.iter("item"):
+            guid = item.findtext("guid")
+            pub_date = item.findtext("pubDate")
+            if guid and pub_date:
+                result[guid] = pub_date
+        return result
+    except Exception:
+        return {}
+
+
 def generate_rss():
+    saved_dates = existing_pub_dates()
     items = []
     if not os.path.exists(AUDIO_DIR):
         print(f"❌ {AUDIO_DIR} not found!")
@@ -110,9 +158,13 @@ def generate_rss():
 
     audio_files = [f for f in os.listdir(AUDIO_DIR) if f.endswith('.mp3')]
 
-    # Feed = tier-based episodes + drill tracks (knocks live in knocks/ and are
-    # deliberately NOT on the feed — they are lock-screen doses, not episodes).
+    # Feed = tier-based episodes + drill tracks + knock memos (all audio lands
+    # on the feed — a dismissed lock-screen dose stays findable).
     episodes = [f for f in audio_files if f.startswith('tier') or f.startswith('drill_')]
+    knocks_dir = os.path.join(AUDIO_DIR, "knocks")
+    if os.path.isdir(knocks_dir):
+        episodes += [f"knocks/{f}" for f in os.listdir(knocks_dir) if f.endswith('.mp3')]
+    knock_moves = knock_move_labels()
 
     # Sort by mission number descending (newest first); drills sort above by date/time
     def sort_key(filename):
@@ -122,6 +174,9 @@ def generate_rss():
         match = re.search(r"drill_(\d{4})-(\d{2})-(\d{2})(?:_(\d{4}))?", filename)
         if match:
             return (9, int("".join(g or "0" for g in match.groups())))
+        match = re.search(r"knock_(\d{4})-(\d{2})-(\d{2})(?:T(\d{2})-(\d{2}))?", filename)
+        if match:
+            return (8, int("".join(g or "0" for g in match.groups())))
         return (0, 0)
 
     episodes.sort(key=sort_key, reverse=True)
@@ -131,11 +186,17 @@ def generate_rss():
         script_path = os.path.join(SCRIPTS_DIR, filename.replace('.mp3', '.md'))
 
         raw_title = get_title_from_md(script_path) or filename
-        title = clean_title(raw_title, filename)
+        if filename.startswith("knocks/"):
+            title = knock_title(filename, knock_moves)
+        else:
+            title = clean_title(raw_title, filename)
         size = os.path.getsize(audio_path)
-        mtime = os.path.getmtime(audio_path)
-        pub_date = email.utils.formatdate(mtime, localtime=True)
         audio_url = f"{BASE_URL}/{AUDIO_DIR}/{filename}"
+        # Reuse the saved pubDate for existing items; mtime only for genuinely
+        # new ones (on a CI runner mtime is always the checkout time).
+        pub_date = saved_dates.get(audio_url) or email.utils.formatdate(
+            os.path.getmtime(audio_path), localtime=True
+        )
 
         # Calculate real duration from the MP3 file
         try:

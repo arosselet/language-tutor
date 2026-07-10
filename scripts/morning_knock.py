@@ -9,9 +9,10 @@ Division of labour:
     daily cap, a minimum gap, and the tutor's own `next_check` soft-gate. It
     cheaply skips a tick (no LLM) unless a reach is actually possible and due.
   - The tutor owns the POLICY: at each wake they decide fire-or-silence, the
-    move, the MODALITY (text micro-dose / audio memo / challenge / grace /
-    silence), their own next check-in time (self-pacing), and log a one-line
-    rationale so the choices stay inspectable — and adaptable.
+    move, the MODALITY (text micro-dose / audio memo / challenge / volley /
+    eavesdrop tape / grace / silence), their own next check-in time
+    (self-pacing), and log a one-line rationale so the choices stay
+    inspectable — and adaptable.
 
 The reward the tutor optimises is THE LEARNER SHOWING UP (chat sessions /
 returns), not taps. A tap is a weak "it landed" signal; an ignored streak means
@@ -26,7 +27,7 @@ Secrets (in .env locally; GitHub Actions secrets in CI):
   OPENROUTER_API_KEY   — the one-shot that makes the decision (one key, any model)
   PUSH_WEBHOOK_URL     — the phone-notification webhook (see docs/phone_loop.md)
 GCP TTS auth comes from ADC locally / a service-account secret in CI (only needed
-when the tutor chooses the audio modality and the provider is google).
+when the tutor chooses an audio modality and the provider is google).
 """
 import argparse
 import asyncio
@@ -42,11 +43,11 @@ from openai import OpenAI
 
 BASE = Path(__file__).parent.parent
 sys.path.insert(0, str(BASE / "scripts"))
-from config import (LOCAL_TZ, LEARNER, TUTOR, LANGUAGE, TUTOR_VOICE, REPO,
-                    OUTREACH, CHAT_FORM, AUDIO_FORM, WEAVE_RULE, SCRIPT_NAME,
-                    TTS_PROVIDER)
+from config import (LOCAL_TZ, LEARNER, TUTOR, LANGUAGE, TUTOR_VOICE,
+                    EAVESDROP_VOICE, REPO, OUTREACH, VOLLEY_SIZE, CHAT_FORM,
+                    AUDIO_FORM, WEAVE_RULE, SCRIPT_NAME, TTS_PROVIDER)
 from render_audio import (generate_segment_google, generate_segment_edge,
-                          get_raw_mp3_frames, SILENCE_FRAME)
+                          get_raw_mp3_frames, SILENCE_FRAME, clean_memo_for_tts)
 from render_chat import render_chat
 
 OPENROUTER_BASE = "https://openrouter.ai/api/v1"   # OpenAI-compatible; one key, many models
@@ -64,7 +65,16 @@ MAX_REACHES_PER_DAY = OUTREACH["max_reaches_per_day"]  # a "reach" = a knock tha
 MIN_GAP_HOURS = OUTREACH["min_gap_hours"]           # minimum spacing between reaches
 NEXT_CHECK_CLAMP = (0.5, 24.0)   # the tutor's self-set next_check is clamped to this many hours
 
-MODALITIES = {"text", "audio", "challenge", "grace", "silence"}
+MODALITIES = {"text", "audio", "challenge", "volley", "eavesdrop", "grace", "silence"}
+
+# Lock-screen render budget. The mandate asks for ≤140; past ~160 the phone cuts
+# the body and the dose dies unseen. Warn-only — a trimmed dose is worse than a
+# logged warning; the fix belongs in the composer.
+BODY_BUDGET = 160
+
+
+def over_budget(text: str, budget: int = BODY_BUDGET) -> bool:
+    return len(text or "") > budget
 
 
 # ── State helpers ─────────────────────────────────────────────────────────────
@@ -154,7 +164,13 @@ def outcome_memory(klog: list, now: datetime) -> str:
             detail = f"tapped ({k['response']})"
         else:
             detail = "no-tap"
-        lines.append(f"    {k.get('date','?')} · {modality}/{move} · {detail}")
+        # the ask itself, not just the move name — move names hide same-ask
+        # repeats from the variety law (the same target can fire daily under
+        # differently-named moves and cap itself at hinted forever)
+        ask = k.get("expected_target") or "no-ask"
+        body_head = (k.get("body") or "").replace("\n", " ")[:48]
+        lines.append(f"    {k.get('date','?')} · {modality}/{move} · "
+                     f"asked: {ask} · “{body_head}…” · {detail}")
 
     # Ignore streak = trailing reaches with no tap AND no session since.
     streak = 0
@@ -181,6 +197,19 @@ def outcome_memory(klog: list, now: datetime) -> str:
             f"  Ignore-streak: {streak} unanswered reaches.{verdict}")
 
 
+def demand_streak(klog: list) -> int:
+    """Trailing consecutive FIRES that carried an ask (non-empty expected_target).
+    The variety rule reads this: after 2, the next fire must be a no-ask dose or
+    silence — Python counts; the mandate owns the rule (policy stays the tutor's)."""
+    n = 0
+    for k in reversed([k for k in klog if is_fire(k)]):
+        if k.get("expected_target"):
+            n += 1
+        else:
+            break
+    return n
+
+
 def remaining_room(klog: list, now: datetime) -> str:
     now_local = now.astimezone(LOCAL_TZ)
     n_today = fires_today(klog, now_local.date())
@@ -189,28 +218,110 @@ def remaining_room(klog: list, now: datetime) -> str:
     if lf:
         gap = (now - datetime.fromisoformat(lf["timestamp"])).total_seconds() / 3600
         gap_str = f"last reach {gap:.1f}h ago"
+    streak = demand_streak(klog)
+    streak_str = f"\n  Demand-streak: {streak} consecutive fires carried an ask"
+    if streak >= 2:
+        streak_str += " — the variety rule says the next fire must be a NO-ASK dose or silence."
     return (f"RAILS (hard — stay well inside; silence is free):\n"
             f"  Waking window {WAKING_START_HOUR}:00–{WAKING_END_HOUR}:00 {now_local.tzname()}; "
             f"now {now_local:%H:%M}.\n"
-            f"  Reaches today: {n_today}/{MAX_REACHES_PER_DAY}. Min gap {MIN_GAP_HOURS}h ({gap_str}).")
+            f"  Reaches today: {n_today}/{MAX_REACHES_PER_DAY}. Min gap {MIN_GAP_HOURS}h ({gap_str})."
+            f"{streak_str}")
+
+
+def recent_ask_counts(klog: list, lexicon: dict, days: int = 3) -> dict:
+    """word → how many fired knocks in the last `days` asked for it (the original
+    expected_target) or printed it (body/memo/recast, whole chains). Ripest-first
+    alone keeps the same headliner on top of the menu every day — the same ask
+    re-fires under different move names and caps itself at hinted forever."""
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    recent = []
+    for k in klog:
+        if not is_fire(k):
+            continue
+        try:
+            ts = datetime.fromisoformat((k.get("timestamp") or "").replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        if ts.tzinfo is None:
+            ts = ts.replace(tzinfo=timezone.utc)
+        if ts < cutoff:
+            continue
+        texts = [k.get("body", ""), k.get("memo_script", ""), k.get("reply_line", "")]
+        texts += [x.get("reply_line", "") for x in k.get("exchanges", [])]
+        recent.append((k.get("expected_target", ""), " ".join(t for t in texts if t).lower()))
+    counts = {}
+    for word, rec in lexicon.items():
+        probes = [word.lower()] + [p.lower() for p in rec.get("phonetic", []) if p]
+        n = sum(1 for tgt, blob in recent
+                if tgt == word or any(p in blob for p in probes))
+        if n:
+            counts[word] = n
+    return counts
 
 
 def deck_due_list(max_fire: int = 6, max_catch: int = 2) -> str:
-    """The sprint deck's due items, ripest first, so a knock's expected_target can
-    hit what's actually due instead of improvising off the story. `sync_state
-    status` carries only the deck METER; this is the menu."""
+    """The sprint deck's due items, ripest first BUT recently-asked last, so a
+    knock's expected_target can hit what's actually due instead of re-running
+    yesterday's ask. `sync_state status` carries only the deck METER; this is
+    the menu. Items never soaked anywhere are flagged UNSEEN — the mandate
+    forbids cold-quizzing those (teach first, show dose)."""
     from suggest_targets import deck_status  # lazy: keeps module import light
     from sync_state import LEXICON_PATH
-    deck = deck_status(load_json(LEXICON_PATH) or {})
+    lex = load_json(LEXICON_PATH) or {}
+    deck = deck_status(lex)
     if not deck or not deck["pending"]:
         return ""
+    asked = recent_ask_counts(load_json(KNOCK_LOG_PATH) or [], lex)
+    pending = sorted(deck["pending"], key=lambda t: asked.get(t["word"], 0))
     lines = ["DECK DUE (the sprint menu — expected_target should usually come from here):"]
-    for t in deck["pending"][:max_fire]:
+    for t in pending[:max_fire]:
         state = "hinted→cold" if t["production"] == "hinted" else f"{t['recognition']}, cold-pending"
+        rec = lex.get(t["word"], {})
+        if not rec.get("seen_in") and not rec.get("last_surfaced"):
+            state += " · ⚠ UNSEEN — teach first (show dose), don't quiz"
+        n = asked.get(t["word"], 0)
+        if n:
+            state += f" · ⚠ asked/shown {n}× in last 3d — needs a genuinely new scene, or pick another item"
         lines.append(f"    [{t['kind']}] {t['word']} — {t['gloss'] or '[no gloss]'}  [{state}]")
     for t in deck["catch_pending"][:max_catch]:
         lines.append(f"    [ear-only] {t['word']} — {t['gloss'] or '[no gloss]'}  "
                      f"(soak/eavesdrop dose only — never ask them to fire it)")
+    return "\n".join(lines)
+
+
+def volley_targets(n: int = VOLLEY_SIZE) -> list[dict]:
+    """The BINDING item list for a volley knock — Python picks so deck coverage
+    stays honest (the tutor's taste concentrates reps on the same few headliners
+    while the long tail gets zero touches). Due-first, recently-asked last,
+    UNSEEN and ear-only items excluded (teach-first / never-fire laws)."""
+    from suggest_targets import deck_status  # lazy: keeps module import light
+    from sync_state import LEXICON_PATH
+    lex = load_json(LEXICON_PATH) or {}
+    deck = deck_status(lex)
+    if not deck or not deck["pending"]:
+        return []
+    asked = recent_ask_counts(load_json(KNOCK_LOG_PATH) or [], lex)
+    pending = sorted(deck["pending"], key=lambda t: asked.get(t["word"], 0))
+    out = []
+    for t in pending:
+        rec = lex.get(t["word"], {})
+        if not rec.get("seen_in") and not rec.get("last_surfaced"):
+            continue  # UNSEEN — teach first (show dose), never cold-quiz
+        out.append({"target": t["word"], "gloss": t.get("gloss", "")})
+        if len(out) == n:
+            break
+    return out
+
+
+def volley_block() -> str:
+    vt = volley_targets()
+    if len(vt) < 2:
+        return ""
+    lines = ["VOLLEY TARGETS (binding, in this order — Python picked the due items; "
+             "you write the native-language situations if you fire a volley):"]
+    lines += [f"    {i}. {t['target']} — {t['gloss'] or '[no gloss]'}"
+              for i, t in enumerate(vt, 1)]
     return "\n".join(lines)
 
 
@@ -222,7 +333,8 @@ def build_digest() -> str:
     status = out.stdout.strip()
     klog = load_json(KNOCK_LOG_PATH) or []
     now = datetime.now(timezone.utc)
-    parts = [status, deck_due_list(), outcome_memory(klog, now), remaining_room(klog, now)]
+    parts = [status, deck_due_list(), volley_block(),
+             outcome_memory(klog, now), remaining_room(klog, now)]
     return "\n\n".join(p for p in parts if p)
 
 
@@ -231,6 +343,21 @@ def build_digest() -> str:
 # Language-specific rules enter this prompt ONLY through the config fragments
 # (CHAT_FORM / AUDIO_FORM / WEAVE_RULE) — this file never states a language rule
 # of its own. That keeps the whole port surface in config/tutor.json.
+
+# The eavesdrop modality needs a second pinned voice; without one it is never
+# offered (and normalize_decision degrades any stray attempt to text).
+EAVESDROP_MODALITY = f"""\
+- "eavesdrop" — the CATCH-axis dose: memo_script is an overheard TAPE, not you talking — \
+one side of a phone call in a separate pinned native voice. Weave ONE ear-only deck item \
+(the digest marks them) into ~45-90s of natural chatter, written for TTS ({AUDIO_FORM}), \
+real spoken rhythm; full comprehension is NOT required — catching the DRIFT of \
+partly-unknown speech IS the skill. notification_body = one drift-question in {LEARNER}'s \
+native language ("who got the job?" / "what's the caller worked up about?") — the reply is \
+comprehension in the native language, never a production ask. expected_target = that \
+ear-only item's key; set target_revealed=false. The deck's catch half advances ONLY \
+through this move: when the status line shows catch trailing and an ear-only item is due, \
+this dose is usually a better spend than another production ask.
+""" if EAVESDROP_VOICE else ""
 
 OUTREACH_MANDATE = f"""\
 You are {TUTOR}, deciding a single OUTREACH TICK. The rails already cleared, so a reach \
@@ -248,6 +375,23 @@ later unasked — no permission needed each time. But if a recent reply in OUTRE
 says they're busy, to back off, or anything in that spirit, treat it as a real answer: widen \
 next_check_hours (or go quiet) rather than pushing harder or re-litigating it next tick.
 
+VARIETY IS STRUCTURAL (knocks obey the same law as episodes — sameness is how a feed \
+dies): never run the same scenario peg (the same scene/frame) two fires in a row, and no \
+peg more than once in any 3 consecutive fires — the OUTREACH MEMORY lists your recent \
+moves; diverge from them. The memory shows each reach's actual ASK: the same target or \
+the same surface question twice in 3 days is the same peg no matter what the move was \
+called, and the DECK DUE menu marks items already asked/shown recently — a marked item \
+needs a genuinely new scene, or pick another item (a re-ask inside the reveal window can \
+only ever score hinted; it farms the treadmill, not the deck). NEVER print deck \
+{LANGUAGE} the body isn't asking for — a ✓-praise recap that lists yesterday's lines \
+re-reveals them and caps the next fire at hinted; celebrate with the meter, never the \
+{LANGUAGE}. After TWO consecutive demand-doses (any fire with a non-empty \
+expected_target — the digest's Demand-streak line counts this for you), the next fire \
+MUST be a no-ask dose (lore, audio memo, show dose, grace) or silence. And when the \
+digest shows no chat session for 3+ days, this channel is carrying the whole curriculum \
+— bias toward TEACHING and soaking (show doses, audio, lore), not collection; you cannot \
+quiz them into momentum.
+
 YOUR MODALITIES (pick what fits THIS moment; never the same move twice in a row):
 - "text"      — a one-line micro-dose answered right in the reply ("eaten yet? reply in {LANGUAGE} — that's the whole ask"). No audio. Lowest friction; often the best re-opener after a gap.
 - "audio"     — a self-contained ~60-90s spoken memo (a vivid one-use peg for a word). A dose in itself, never a pitch to "go listen to an episode." \
@@ -259,6 +403,17 @@ pick one you didn't score, the rep is wasted and the "correction" reveals a word
 Includes the FIELD MISSION: assign one line to deploy in real life tonight, unprompted \
 — the native informant is the unwitting audience, NEVER the examiner; \
 collect the debrief at next contact.
+- "volley"    — the daily deck blitz as a knock: the digest's VOLLEY TARGETS, one item per \
+exchange. You write volley_asks — one-line situations in {LEARNER}'s native language, \
+index-matched to the targets (the target list is BINDING; Python picked it so deck \
+coverage stays honest — your craft is the situations, not the picks), each pinned to ONE \
+natural answer, never showing the {LANGUAGE}, ≤110 chars each. Item 1 rides the \
+notification; after each judged reply Python appends the next item to your recast (miss = \
+recast-and-move, the blitz law). While a deck sprint is on, most days should carry ONE \
+volley — it is where the deck's volume lives; read the status line's burn rate (need vs. \
+trailing pace): that gap is what the volley exists to close. It counts as ONE demand dose \
+for the variety law, and its best slot is usually the day's first reach.
+{EAVESDROP_MODALITY}\
 - "grace"     — a warm, no-pressure note when they've lapsed (a missed day is nothing — the Enjoyment Clause). Text delivery.
 - "silence"   — reach nothing this tick. Set act=false. Choose this freely; often correct.
 
@@ -292,11 +447,23 @@ or memo hands them that {LANGUAGE} itself — if it does, their reply is reading
 "hinted" at most; only an UN-shown target can be fired cold. The strongest doses show a \
 situation in the learner's native language and leave the {LANGUAGE} to them.
 
-TARGETING: while a deck sprint is active the digest carries a DECK DUE menu — pick \
-expected_target from it most of the time; clearing the deck IS the sprint, and a knock \
-that fires a due deck item counts on the scoreboard they see. The running story is the \
-*flavour* wrapped around a due item, not the source of targets. (Ear-only items are \
-soak doses: play/show them, ask for nothing back.)
+TARGETING — THE COHERENCE LAW: choose the target FIRST, then write the body AS THE ASK \
+FOR THAT TARGET. expected_target must be the natural answer to your body's own question \
+— if the body asks "how long are you staying?", the target is the staying-answer and \
+nothing else. A body that asks one thing while expected_target names a different deck \
+item wastes the rep and gets them graded against a question they were never asked (it is \
+the cardinal sin of this loop). While a deck sprint is active, pick WHICH item to ask \
+about from the DECK DUE menu — clearing the deck IS the sprint — but the running story \
+is only the *flavour* around that one item, never a source of extra targets. (Ear-only \
+items are soak doses: play/show them, ask for nothing back.)
+
+TEACH BEFORE QUIZ: a menu item flagged ⚠ UNSEEN has never been soaked anywhere — no \
+episode, no session, no memo. Never cold-quiz one. Give it a SHOW dose first (a text or \
+audio that HANDS them the line and when it's used — expected_target EMPTY), and let a \
+later knock ask for it unrevealed in a fresh context. Likewise never re-ask {LANGUAGE} that \
+this knock's own body (or your last recast) reveals — a revealed word can only ever \
+score hinted, so an immediate re-ask is a treadmill, not a rep; plant the unrevealed \
+ask via "schedule" a day out instead, or leave it to the wild.
 
 SCHEDULING (optional; works even when you choose silence NOW): you may plant ONE \
 future push at a precise local time via "schedule" — a fully-composed dose that fires \
@@ -309,12 +476,13 @@ only when a PRECISE time genuinely serves the rep better than your next wake.
 Return ONLY a JSON object, no prose around it:
 {{
   "act": true | false,                  // false = silence this tick
-  "modality": "text" | "audio" | "challenge" | "grace" | "silence",
+  "modality": "text" | "audio" | "challenge" | "volley" | "eavesdrop" | "grace" | "silence",
   "move": "<2-4 word label of the move, for the log>",
-  "notification_body": "<the lock-screen line — valuable even if never tapped; MUST carry a {LANGUAGE} phrase + tiny gloss. One emoji ok. Empty string if silence.>",
-  "memo_script": "<ONLY for modality 'audio': the spoken memo, paragraphs separated by ONE blank line, plain text, {LANGUAGE} payload written for TTS ({AUDIO_FORM}). Empty string otherwise.>",
+  "notification_body": "<the lock-screen line — valuable even if never tapped; MUST carry a {LANGUAGE} phrase + tiny gloss. One emoji ok. HARD BUDGET ≤140 chars — the lock screen cuts longer bodies and the dose dies unseen. Empty string if silence.>",
+  "memo_script": "<ONLY for modality 'audio' or 'eavesdrop': the spoken memo (audio) or the overheard tape (eavesdrop), paragraphs separated by ONE blank line, plain text, {LANGUAGE} payload written for TTS ({AUDIO_FORM}). Empty string otherwise.>",
   "expected_target": "<the one word/chunk/frame a good reply would fire (canonical {SCRIPT_NAME} or frame:... key); empty string if this dose asks for nothing specific>",
   "target_revealed": true | false,      // does the body/memo show that {LANGUAGE} itself?
+  "volley_asks": ["<one-line situation for VOLLEY TARGET 1>", "<…one per listed VOLLEY TARGET, index-matched>"],   // ONLY for modality "volley"; omit otherwise. Python zips these with its binding targets and composes the body from ask 1.
   "next_check_hours": <number>,         // when to reconsider (clamped to a sane range)
   "schedule": {{"at_local": "YYYY-MM-DDTHH:MM", "body": "<the full dose>", "expected_target": "<or empty>", "target_revealed": true | false, "move": "<2-4 words>"}} | null,
   "rationale": "<one line: why this choice>"
@@ -347,10 +515,13 @@ def maybe_enqueue_schedule(decision: dict) -> Path | None:
 
 def parse_llm_json(text: str) -> dict:
     """The mandates say 'return ONLY a JSON object', but models occasionally
-    wrap it in a code fence or a line of prose anyway. Strip fences, then fall
-    back to the outermost {...} slice; print the raw text before giving up so
-    the Action log shows WHAT came back, not just that it didn't parse."""
-    text = text.strip()
+    wrap it in a code fence, prose, or a Python-style dict (single-quoted keys
+    bypass the {..} slice fallback). Strategy: strip fences → json.loads →
+    {..} slice + json.loads → ast.literal_eval (handles single quotes +
+    Python True/False/None). Print the raw text before any re-raise so the
+    Action log shows WHAT came back."""
+    import ast as _ast
+    text = (text or "").strip()
     if text.startswith("```"):
         text = text.split("```")[1].lstrip("json").strip()
     try:
@@ -358,24 +529,28 @@ def parse_llm_json(text: str) -> dict:
     except json.JSONDecodeError:
         start, end = text.find("{"), text.rfind("}")
         if start == -1 or end <= start:
-            print(f"--- unparseable LLM response ---\n{text}\n---")
+            print(f"--- unparseable LLM response (no braces) ---\n{text}\n---")
             raise
-        return json.loads(text[start:end + 1], strict=False)
+        slice_ = text[start : end + 1]
+        try:
+            return json.loads(slice_, strict=False)
+        except json.JSONDecodeError:
+            # Python-style dict: single-quoted keys, True/False/None literals
+            try:
+                result = _ast.literal_eval(slice_)
+                if isinstance(result, dict):
+                    return result
+            except (ValueError, SyntaxError):
+                pass
+            print(f"--- unparseable LLM response (all fallbacks failed) ---\n{text}\n---")
+            raise
 
 
-def decide(digest: str) -> dict:
-    persona = (BASE / "protocol" / "persona.md").read_text(encoding="utf-8")
-    client = OpenAI(base_url=OPENROUTER_BASE, api_key=os.environ["OPENROUTER_API_KEY"])
-    resp = client.chat.completions.create(
-        model=MODEL,
-        max_tokens=1600,
-        messages=[
-            {"role": "system", "content": persona + "\n\n---\n\n" + OUTREACH_MANDATE},
-            {"role": "user", "content": f"TODAY'S DIGEST:\n\n{digest}"},
-        ],
-    )
-    d = parse_llm_json(resp.choices[0].message.content)
-    # Normalise / guard the fields Python relies on.
+def normalize_decision(d: dict, volley_menu: list | None = None) -> dict:
+    """Guard the decision's JSON into the shape Python relies on. For a volley,
+    the tutor's asks are zipped with PYTHON's binding targets (volley_targets) —
+    the model writes the situations, never the picks — and the body is composed
+    from ask 1 so the coherence law holds by construction."""
     d["modality"] = d.get("modality") if d.get("modality") in MODALITIES else "text"
     if d["modality"] == "silence":
         d["act"] = False
@@ -389,7 +564,47 @@ def decide(digest: str) -> dict:
     d["expected_target"] = (d.get("expected_target") or "").strip()
     d["target_revealed"] = bool(d.get("target_revealed", True))
     d["schedule"] = d.get("schedule") if isinstance(d.get("schedule"), dict) else None
+    if d["modality"] == "eavesdrop":
+        if EAVESDROP_VOICE and (d.get("memo_script") or "").strip():
+            d["target_revealed"] = False  # the tape plays the language, but the ask is comprehension
+        else:
+            d["modality"] = "text"  # no pinned voice / no tape to render — plain dose
+    if d["modality"] == "volley":
+        asks = [a.strip() for a in (d.get("volley_asks") or [])
+                if isinstance(a, str) and a.strip()]
+        items = [{"target": t["target"], "ask": a}
+                 for t, a in zip(volley_menu or [], asks)]
+        if len(items) >= 2:
+            d["volley"] = items
+            d["expected_target"] = items[0]["target"]
+            d["target_revealed"] = False  # volley asks are native-language situations by contract
+            d["notification_body"] = f"⚡ volley 1/{len(items)} — {items[0]['ask']}"
+        else:
+            d["modality"] = "text"  # no binding menu / no usable asks — plain dose
     return d
+
+
+def decide(digest: str, volley_menu: list | None = None) -> dict:
+    persona = (BASE / "protocol" / "persona.md").read_text(encoding="utf-8")
+    client = OpenAI(base_url=OPENROUTER_BASE, api_key=os.environ["OPENROUTER_API_KEY"])
+    messages = [
+        {"role": "system", "content": persona + "\n\n---\n\n" + OUTREACH_MANDATE},
+        {"role": "user", "content": f"TODAY'S DIGEST:\n\n{digest}"},
+    ]
+    last_err: Exception | None = None
+    for attempt in range(1, 4):
+        resp = client.chat.completions.create(model=MODEL, max_tokens=1600, messages=messages)
+        try:
+            d = parse_llm_json(resp.choices[0].message.content)
+            if attempt > 1:
+                print(f"   [ok] parsed on attempt {attempt}")
+            break
+        except (json.JSONDecodeError, ValueError) as exc:
+            print(f"   ⚠ parse failed (attempt {attempt}/3): {exc}")
+            last_err = exc
+    else:
+        raise last_err  # all 3 attempts returned unparseable JSON
+    return normalize_decision(d, volley_menu)
 
 
 # ── Delivery plumbing ─────────────────────────────────────────────────────────
@@ -406,14 +621,14 @@ def load_env(path: Path):
         os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
 
 
-async def render_memo(memo_script: str, out_path: Path):
+async def render_memo(memo_script: str, out_path: Path, voice: str = TUTOR_VOICE):
     import tempfile
     paras = [p.strip() for p in memo_script.split("\n\n") if p.strip()]
     audio = bytearray()
     tmp = tempfile.mkdtemp()
     gen = generate_segment_google if TTS_PROVIDER == "google" else generate_segment_edge
     for i, para in enumerate(paras):
-        seg = await gen(para, TUTOR_VOICE, i, tmp)
+        seg = await gen(clean_memo_for_tts(para), voice, i, tmp)
         audio.extend(get_raw_mp3_frames(seg))
         audio.extend(SILENCE_FRAME * 25)  # ~0.6s breath between paragraphs
         os.remove(seg)
@@ -430,6 +645,18 @@ def commit_and_push(paths: list[Path], msg: str):
     # goes minutes stale during the LLM/TTS steps — land our commit on top of theirs.
     subprocess.run(["git", "pull", "--rebase", "--autostash", "origin", "main"], cwd=BASE, check=True)
     subprocess.run(["git", "push", "origin", "HEAD:main"], cwd=BASE, check=True)
+
+
+def refresh_feed() -> Path | None:
+    """All audio lands on the podcast feed: rebuild rss.xml so a dismissed
+    audio memo stays findable. Feed polish must never kill the knock."""
+    try:
+        subprocess.run([sys.executable, str(BASE / "scripts" / "rebuild_rss.py")],
+                       cwd=BASE, check=True)
+        return BASE / "rss.xml"
+    except Exception as e:
+        print(f"   ⚠ rss rebuild failed ({e}) — continuing without feed update")
+        return None
 
 
 def jsdelivr_url(mp3: Path) -> str:
@@ -478,6 +705,10 @@ def log_decision(now: datetime, decision: dict, *, acted: bool,
         entry["body"] = decision.get("notification_body")
         entry["expected_target"] = decision.get("expected_target", "")
         entry["target_revealed"] = decision.get("target_revealed", True)
+        if decision.get("volley"):
+            # the reply judge walks this queue deterministically (knock_reply.py)
+            entry["volley"] = decision["volley"]
+            entry["volley_next"] = 1
         if audio_url:
             entry["audio_url"] = audio_url
             entry["memo_script"] = decision.get("memo_script", "")  # the reply judge reads what was heard
@@ -508,7 +739,7 @@ def main():
     print("1. digest…")
     digest = build_digest()
     print(f"2. {TUTOR} decides…")
-    decision = decide(digest)
+    decision = decide(digest, volley_targets())
     print(f"   → act={decision.get('act')} modality={decision['modality']} "
           f"move={decision.get('move')!r} next_check={decision['next_check_hours']}h")
     print(f"   rationale: {decision.get('rationale')}")
@@ -531,13 +762,16 @@ def main():
     body = decision.get("notification_body", "")
     mp3 = None
     audio_url = None
-    if decision["modality"] == "audio":
+    if decision["modality"] in ("audio", "eavesdrop"):
         print("3. render…")
         mp3 = KNOCKS_DIR / f"knock_{now.strftime('%Y-%m-%dT%H-%M')}.mp3"
-        asyncio.run(render_memo(decision.get("memo_script", ""), mp3))
+        voice = EAVESDROP_VOICE if decision["modality"] == "eavesdrop" else TUTOR_VOICE
+        asyncio.run(render_memo(decision.get("memo_script", ""), mp3, voice))
         audio_url = jsdelivr_url(mp3)
 
     print("\n--- notification body ---\n" + body + "\n")
+    if over_budget(body):
+        print(f"   ⚠ body is {len(body)} chars (budget {BODY_BUDGET}) — the lock screen will cut it")
 
     if args.dry_run:
         print(f"[dry-run] would push ({decision['modality']}) + log; stopping.", mp3 or "")
@@ -545,6 +779,10 @@ def main():
 
     path = log_decision(now, decision, acted=True, audio_url=audio_url, mp3=mp3)
     commit_paths = [path, render_chat()] if mp3 is None else [mp3, path, render_chat()]
+    if mp3 is not None:
+        rss = refresh_feed()
+        if rss:
+            commit_paths.append(rss)
     qp = maybe_enqueue_schedule(decision)
     if qp:
         commit_paths.append(qp)

@@ -31,6 +31,7 @@ _DEFAULTS = {
         "waking_end_hour": 21,
         "max_reaches_per_day": 5,
         "min_gap_hours": 3,
+        "volley_size": 3,
     },
     "deck": {"name": "sprint", "label": "Sprint Deck",
              "deadline": None, "deadline_label": "deadline"},
@@ -105,11 +106,16 @@ TTS = CONFIG.get("tts", {})
 TTS_PROVIDER = TTS.get("provider", "edge")
 TTS_LANGUAGE_CODE = TTS.get("language_code", "")
 VOICES = TTS.get("voices", {})
+# Pinned second voice for the eavesdrop knock (the overheard tape) — ear-training
+# tracks a speaker, so it's one consistent someone, and never the tutor's voice.
+# Empty ⇒ the eavesdrop modality is disabled (the knock never offers it).
+EAVESDROP_VOICE = TTS.get("eavesdrop_voice", "")
 
 FEED = CONFIG.get("feed", {})
 REPO = FEED.get("repo", "")                         # "user/repo" — CDN + RSS URLs derive from this
 
 OUTREACH = CONFIG["outreach"]
+VOLLEY_SIZE = OUTREACH.get("volley_size", 3)   # deck items per volley knock
 DECK = CONFIG["deck"]
 DECK_NAME = DECK.get("name", "sprint")
 DECK_LABEL = DECK.get("label", "Sprint Deck")

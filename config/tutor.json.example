@@ -28,6 +28,7 @@
   "tts": {
     "provider": "edge",
     "language_code": "es-MX",
+    "eavesdrop_voice": "es-MX-DaliaNeural",
     "voices": {
       "google_chirp_male": [],
       "google_chirp_female": [],
@@ -50,7 +51,8 @@
     "waking_start_hour": 8,
     "waking_end_hour": 21,
     "max_reaches_per_day": 5,
-    "min_gap_hours": 3
+    "min_gap_hours": 3,
+    "volley_size": 3
   },
 
   "deck": {
