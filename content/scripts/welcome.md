@@ -15,9 +15,13 @@
 
 **HOST_B:** So you know I've quit three language apps. Be honest with me. What is this one?
 
-**HOST_A:** It's not an app. That's most of the answer, actually. There's no streak, no leaderboard, no owl guilting you at nine p.m. It's a small open repository — you clone it, open the coding agent you already use, and say: set up my tutor. It asks you questions for about ten minutes. Then it writes you a tutor.
+**HOST_A:** It's not an app. That's most of the answer, actually. There's no streak, no leaderboard, no owl guilting you at nine p.m. It's a small open repository — you clone it, open the coding agent you already use, and say: set up my tutor. It interviews you — your language, your people, where you actually are — and then it writes you a tutor.
 
-**HOST_B:** Writes me a tutor.
+**HOST_B:** Just like that.
+
+**HOST_A:** The interview's the easy part. Then there's the plumbing — API keys, voices, hooking up your phone — and that takes as long as plumbing takes. It's honest about that too. The agent does the wiring; you hold the flashlight.
+
+**HOST_B:** Okay. So it writes me a tutor.
 
 **HOST_A:** A person, more or less. A name from the culture, a way of talking, and a memory of where you actually are — not lesson one. It was built by an engineer who married into a Tamil-speaking family. Years at that table. He understood a lot of what flew past him, and could say almost none of it back.
 
