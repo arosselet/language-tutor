@@ -47,13 +47,13 @@
 
 **HOST_A:** Whatever you struggled to say this morning, it turns into a short episode by the afternoon — a small scene built from exactly your words, in native voices, on your podcast feed. You strained to say it; now you hear it used, by people who sound like the people you want to talk to. That loop — from your mouth to your ear and back — is the whole engine.
 
-**HOST_B:** Okay. Nine years of Ontario French. Is that in there somewhere, or do I start over?
+**HOST_B:** Okay. Five years of Ontario school French. Is that in there somewhere, or do I start over?
 
 **HOST_A:** You never start over. That's the first thing the interview does — it maps what you already hold. School French that's asleep. Kitchen Spanish. And it teaches the register people actually speak, not the one in the workbook. Here's a counter in Montréal:
 
 **MONTREALER:** Pis, c'est-tu pour ici ou pour emporter? Tu veux-tu un reçu?
 
-**MONTREALER:** Nine years of school French, and nobody ever taught you *c'est-tu*. That is the French you will actually hear. This is what I mean by the register.
+**MONTREALER:** Five years of school French, and nobody ever taught you *c'est-tu*. That is the French you will actually hear. This is what I mean by the register.
 
 **HOST_A:** It derives that — the real spoken register of your dialect — for your language, on day one. And it writes it down where you can read it.
 
