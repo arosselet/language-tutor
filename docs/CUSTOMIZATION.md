@@ -23,8 +23,10 @@ profile.md says the number.
 | `language.chat_form / audio_form / weave_rule / register_note` | the ONLY channel language rules reach the Python one-shot prompts (knock, judge, drill) | sharpen wording if phone judging misreads your typing |
 | `tutor.voice_id` | the tutor's one pinned voice | re-pin if the voice grates — then keep it pinned |
 | `tts.*` | provider, language code, voice pools | add voices as providers ship them |
+| `tts.eavesdrop_voice` | the second pinned voice for eavesdrop tapes (the overheard caller) | set it to enable the catch-axis knock; empty = modality off |
 | `feed.*` | podcast identity + repo for CDN/RSS URLs | rename your feed |
 | `outreach.*` | waking window, daily cap, min gap, LLM model | make knocks quieter/louder; swap models |
+| `outreach.volley_size` | deck items per volley knock (the daily blitz) | raise it when the deck's burn rate trails the deadline |
 | `deck.*` | sprint name/label/deadline | set when a real date appears; clear after |
 
 ### `protocol/` — the pedagogy and the people
@@ -81,6 +83,9 @@ filtering, so trimming the cron is optional frugality), `push-queue.yml`
 (Claude Code) and `.gemini/commands/*.toml` + `.gemini/GEMINI.md` (Gemini) are
 **thin shims** — substance stays in `protocol/` so any agent behaves
 identically. Renaming the `/tutor` skill to your persona's name is encouraged.
+The `@build` playbooks (`.claude/skills/orient|debug|validate|extend|verify`)
+are plain markdown any agent can read; they are the guard rails that keep the
+machine lean — reach for them before engineering work.
 
 ## Suggested first customizations (after a week of use)
 

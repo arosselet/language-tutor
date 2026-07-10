@@ -85,3 +85,21 @@ what it replaces.
   debt; "No Academic Terms" bans terminology, never stories.
 - **CI git identity is `github-actions[bot]`** — never a noreply alias that
   credits a real user.
+- **The knock loop's honesty is computed, never remembered** (carried in at
+  `template-v2-source`). The judge's reveal claims resolve against evidence
+  Python derives from the log: `revealed_recently` (what was actually shown in
+  48h of traffic), the chain **pin** (a follow-up moves the pin;
+  `expected_target` is immutable so the log stays auditable), and the
+  **coherence law** (pick the target first, write the body as its ask; a
+  mis-targeted knock is void). Trusting the model's memory denied real colds
+  and graded replies against questions never asked.
+- **The capped lane breaks the hinted-forever trap** (carried in at
+  `template-v2-source`). A cold-quality fire blocked only by the reveal window
+  records as CAPPED; capped fires on 2 distinct local days graduate the word
+  to cold. Without it, the very channel drilling a word daily could never let
+  it escape hinted.
+- **Volley targets are Python's; the tutor writes only the situations**
+  (carried in at `template-v2-source`). The tutor's taste concentrates reps on
+  the same headliners; a binding, recency-demoted menu keeps deck coverage
+  honest. Same division as everywhere else: Python computes the menu, the LLM
+  makes the meaning.

@@ -20,7 +20,7 @@ heritage speaker, a Kansai-Japanese sempai for an exam sprint.
 [tamil-tutor](https://github.com/arosselet/tamil-tutor), a real system in daily
 use for months. `docs/WORKED_EXAMPLE.md` distills how each template elaborated
 there; `docs/DECISIONS.md` seeds the lessons it learned the hard way. This
-snapshot elaborates tamil-tutor at tag `template-v1-source`; the reference
+snapshot elaborates tamil-tutor at tag `template-v2-source`; the reference
 implementation moves ahead of it, and the template re-syncs by wholesale
 re-extraction at stable milestones — not per-fix backports.
 
@@ -82,9 +82,11 @@ next chat forces cold:
   twice) for the car and the kitchen.
 - **The knock loop** — the tutor decides, inside hard anti-pester rails,
   whether/when/how to reach your phone: a text micro-dose, a 60–90s audio memo
-  in its one pinned voice, a challenge, or grace. Type a reply straight into
-  the notification and a judge grades it — text the knock *showed* you caps at
-  "hinted"; only unaided production fires cold.
+  in its one pinned voice, a challenge, a multi-item volley blitz, an
+  overheard eavesdrop tape (ear-training), or grace. Type a reply straight
+  into the notification and a judge grades it — text the knock *showed* you
+  caps at "hinted"; only unaided production fires cold (with a graduation
+  lane so daily-knocked words can still escape the cap across days).
 - **Field missions** — one line assigned for live deployment tonight,
   debriefed tomorrow. The strongest cold-fire evidence there is.
 - **Deck sprints** — a real deadline (trip, wedding, exam) gets a finite,

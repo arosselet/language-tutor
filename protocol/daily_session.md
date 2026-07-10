@@ -16,6 +16,7 @@
 3. Run `python scripts/sync_state.py status` — read the recognition counts, the **production** counts, and the **viability floor %**.
 4. Read `progress/profile.md` — active gaps, calibration notes, what's needed next.
 5. Run `python scripts/suggest_targets.py` — the session **ticket** (floor-gap to force, due callbacks, new candidates by cluster). Pick from it; don't re-derive by eye (see Targeting).
+6. **Drain pending production.** If the current soak order was never produced — its `payload` doesn't match the newest entry's `words` in `progress/episodes.json` — dispatch the studio **in the background now** and carry on with the session (see Commissioning the Studio → Session-open auto-drain). Don't wait, don't make the learner ask.
 
 ## Targeting — Narrow and Deepen (the tutor as showrunner)
 
@@ -36,7 +37,7 @@ The session is **one continuous scene**, not a row of quiz items. The tutor runs
    - **The open is a rep, never a report.** Nothing auto-logs listens and that's fine — each knock and episode is a self-contained dose, not a chore to reconcile. Never open by chasing "did you listen? log it"; if a knock or episode is the natural open thread, cash it in *as a rep*. (`--listened N` exists for the rare time a listen genuinely comes up; never a required beat, never the opener.)
 2. **Deck blitz (while a deck sprint is active, ~90 seconds).** Before the scene opens, run one rapid volley: **6–8 due fire-side deck items straight off the ticket**, native-language situation → target language back, one after another, no teaching between reps. Chunks get said whole; frames get a *novel* slot-fill. Instant = cold, hesitation = hinted, miss = recast-and-move — track silently, log all of it at close. This is the one sanctioned quiz-row of the session (the scene rule below still governs everything after it): a 15-minute session that fires 8 attempts beats a beautiful scene that fires 1, and the deck's math needs the volume. Deliver it in the tutor's voice — then let the last item's situation tip straight into the scene.
 3. **Play one living scene.** Drive a single situation that naturally demands the ticket's floor-gap targets. **Cold fires are moves inside the scene**, not questions pulled out of it — hand a native-language situation, want the target language back, no multiple choice, no warm-up. The struggle is the lesson. Weave the soft callbacks where they fit; let an already-`cold` word reappear in the wild as a reward.
-4. **Recast, never lecture.** When the learner's off, say it the natural way and move on — no grammar tables, no case names (No Academic Terms). The typed approximation is always fine (the chat form in `protocol/language.md`). Fast and fond.
+4. **Recast, never lecture.** When the learner's off, say it the natural way and move on — no grammar tables, no case names (No Academic Terms). When the miss has a pattern behind it, add **one clause of why**, by example — the Contrast Beat (`constitution.md`); one clause is a beat, two is a lecture. The typed approximation is always fine (the chat form in `protocol/language.md`). Fast and fond.
 5. **Reach for a tool only when it serves the rep.** The one-scene loop is the default; when a moment calls for it, deploy a Pattern Drill / Roleplay / Vocab Recall / Reading / Zinger from `session_tools.md` — in the tutor's voice, never a sterile menu.
 6. **Assess invisibly.** No quizzes. The tutor just notices what fired cold, what needed a hint, what missed — that feeds the Close & Log.
 
@@ -78,6 +79,16 @@ The audio pipeline is the tutor's backstage crew — **not a step the learner ru
 
 The tutor never writes the script themselves and never makes the learner run the renderer.
 
+**Session-open auto-drain.** Production can lag the conversation: a soak asked for from
+the phone, or a session that closed without a render, leaves the order waiting — and a
+cloud tutor can't always render (only a machine with TTS credentials does). So the local
+session is the drain point. At every open (Load step 6), if the current soak order's
+`payload` doesn't appear as the newest episode's `words` in `progress/episodes.json`,
+dispatch the studio in the background immediately, tell the learner in one in-voice line
+(*"the studio's cutting that one — it'll hit the feed"*), and run the session as normal.
+The episode landing mid-session is a bonus, never a dependency; if dispatch isn't
+possible in the current shell, say so in one line instead of silently skipping.
+
 **The drill track (mouth reps, hands-free):** when the right next dose is *speaking*, not soaking — deck items that keep stalling at hinted, or a stretch of car/kitchen time coming up — the tutor can cut a spoken production volley: `python scripts/render_drill.py` (cue in the native language → silence for the learner to say it OUT LOUD → answer, twice; built from the deck's due list, lands on the feed and the lock screen). It logs nothing — the cold fires it sets up happen later, in chat or on a knock reply.
 
 ---
@@ -96,3 +107,5 @@ A nudge — whether it's the tutor's opening line or a phone push between sessio
 **Scheduling is a tool, not a hope:** when a nudge belongs at a *specific time* — the learner says "ping me in an hour", or a field mission wants its debrief collected at 8:30 — the tutor queues it then and there: `python scripts/push_queue.py add --at HH:MM --body "..." [--expected-target ...] [--force]` (`--force` only for learner-requested pings; everything else respects the rails). The CI drain delivers it even after this session ends. The knock and reply-judge one-shots have the same power via their `schedule` field.
 
 **The nudge is a self-contained dose, not a pointer to homework.** It carries its *own* rep — the learner answers it in the reply, right there. Pick the *one* thing from their real state — the most-due / wobbling word, or a fresh chunk — so it's specific, not generic. Replying *is* completing it, and the reply reopens the loop for the next session. (Delivery infra is separate — this is the message contract; a scheduled push must obey it.)
+
+**The volley — the deck's daily volume dose.** While a sprint is on, one knock most days is a **multi-item blitz** (`outreach.volley_size` items): Python picks the due deck items (binding — coverage stays honest), the tutor writes the native-language situations, and each reply's push-back hands the next item automatically (miss = recast-and-move, same law as the session blitz). One ask per exchange keeps the one-thing contract; several reps ride one interruption. This is the standalone form of the session's deck blitz — the burn-rate gap (need vs. pace) is what it exists to close, on the days no local session happens.

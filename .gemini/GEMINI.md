@@ -41,3 +41,8 @@ for working *on* the system. No keyword is needed for the tutor; reach for
   explore a problem with the learner before writing code.
 - **Behavior:** Standard coding behaviors apply. You may look at existing `.py`
   and `.md` files for context or as code templates.
+- **Skill library:** `.claude/skills/` holds the engineering playbooks —
+  `/orient` (onboarding + glossary), `/debug` (triage), `/validate` (health
+  checks + safe/mutating command inventory), `/extend` (change discipline),
+  `/verify` (proving changes). They are plain markdown — read them directly;
+  start any `@build` task with `orient` if the system is unfamiliar.

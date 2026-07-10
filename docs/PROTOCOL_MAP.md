@@ -56,6 +56,11 @@ ingredient, callbacks, density) and owns the **craft**.
 The tutor can commission the studio end-to-end mid-session; `/studio` also runs
 standalone.
 
+**Engineering playbooks** (`@build`, plain markdown — readable under any agent):
+`.claude/skills/orient` (onboarding + glossary) · `debug` (triage + subsystem
+playbooks) · `validate` (health checks + safe/mutating inventory) · `extend`
+(change-discipline gates) · `verify` (proving changes + flag semantics).
+
 ## State (`progress/` — Python-owned, never hand-edit)
 
 | File | Owner | Holds |

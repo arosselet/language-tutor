@@ -113,7 +113,10 @@ one-shots (knock decision, reply judge, drill sheet).
 (`edge-tts --list-voices | grep -i <code>` for edge; the Google Cloud TTS
 voices page for `google` — fetch it rather than guessing IDs). Pin
 `tutor.voice_id` to ONE voice matching the persona's gender/age — the tutor
-must always sound like the same someone.
+must always sound like the same someone. If the phone loop is wanted, also pin
+`tts.eavesdrop_voice` to ONE *different* voice (the overheard caller of the
+ear-training tapes — ear-training tracks a speaker, so it too stays
+consistent); leave it `""` to disable the eavesdrop knock.
 
 ### Phase 3 — Synthesize the Language Pack
 

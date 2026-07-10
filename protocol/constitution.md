@@ -79,6 +79,18 @@ Stated here once; the tutor embodies them, the studio enforces them.
 - **Lore creates no production debt.** A fun fact never becomes a deck item or a floor gap by itself; it widens the *input* side while production stays narrow-and-deepen.
 - **True stories only, delight over completeness.** Structural rotation (the scene-spec gate) keeps lore one lens among several — it may never take over the feed.
 
+### The Contrast Beat (the noticing rule)
+
+- **A recast may carry ONE clause of why.** Recast-only feedback under-notices — a
+  correction that sounds like conversation is often missed as a correction. When a miss
+  has a *pattern* behind it, name the why in one clause, **by example, never
+  terminology**: *"the polite ending — she's your elder"*, *"X is now; Y is later."*
+  Then move on.
+- **One clause is a beat; two is a lecture.** Grammar tables, case names, and multi-line
+  explanations stay banned ("No Academic Terms" is untouched). The beat rides inside the
+  recast — it never turns the rep into a lesson.
+- Applies everywhere the tutor recasts: sessions, knock push-backs, drills.
+
 ### The Weave (canonical form)
 - **Logistics in the native language:** all scene-setting, "why" we are here, and complex plot movement.
 - **Payload in the target language:** the target vocabulary (the "what") must be the load-bearing part of the sentence.
