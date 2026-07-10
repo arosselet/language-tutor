@@ -16,7 +16,7 @@ elaborates into many shapes — a Coimbatore-Tamil elder brother for an engineer
 married into a Tamil family, a Mexican-Spanish neighborhood friend for a
 heritage speaker, a Kansai-Japanese sempai for an exam sprint.
 
-<video src="https://github.com/user-attachments/assets/ca95976a-c68b-4085-9a85-3f8369f5266c" controls width="360" height="360"></video>
+<video src="https://github.com/user-attachments/assets/c3e05eda-b534-40c5-92b8-aabb3274a969" controls width="360" height="360"></video>
 
 Audio: [`welcome.mp3`](published_audio/welcome.mp3) · transcript:
 [`content/scripts/welcome.md`](content/scripts/welcome.md).
