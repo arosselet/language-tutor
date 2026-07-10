@@ -1,4 +1,4 @@
-# Language Tutor — Repository Context
+# Sollu (language-tutor) — Repository Context
 
 This file is a **thin router** — all substance lives in `protocol/` and `docs/`
 so the system behaves identically under any agent.

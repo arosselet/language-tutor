@@ -1,4 +1,4 @@
-# Language Tutor — a personal coach your agent builds around you
+# Sollu — a personal coach your agent builds around you
 
 A template for bootstrapping a **persistent, stateful language coach** for any
 language — powered by whatever coding agent you already use (Claude Code,
@@ -20,6 +20,13 @@ heritage speaker, a Kansai-Japanese sempai for an exam sprint.
 
 Audio: [`welcome.mp3`](published_audio/welcome.mp3) · transcript:
 [`content/scripts/welcome.md`](content/scripts/welcome.md).
+
+**The name:** *Sollu* (சொல்லு) is spoken Tamil for **"say it!"** — the
+one-word imperative the whole system is built around. It's what the reference
+tutor says when he hands you a situation and wants the line back from you;
+forced output is the engine, and the name keeps the template's origin
+language as its star. (The textbook form is சொல்லுங்கள் — and true to this
+repo's pedagogy, nobody at a kitchen table says that.)
 
 **The worked example:** this template was extracted from
 [tamil-tutor](https://github.com/arosselet/tamil-tutor), a real system in daily

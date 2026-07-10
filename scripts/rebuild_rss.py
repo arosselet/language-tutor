@@ -28,7 +28,7 @@ SITE_URL = f"https://github.com/{REPO}"
 AUDIO_DIR = "published_audio"
 SCRIPTS_DIR = "content/scripts"
 RSS_FILE = "rss.xml"
-TITLE = FEED.get("title", "Language Tutor")
+TITLE = FEED.get("title", "Sollu")
 DESCRIPTION = FEED.get("description", "AI-generated language lessons.")
 AUTHOR = FEED.get("author", "Learner &amp; tutor")
 

@@ -98,6 +98,10 @@ what it replaces.
   records as CAPPED; capped fires on 2 distinct local days graduate the word
   to cold. Without it, the very channel drilling a word daily could never let
   it escape hinted.
+- **The project is named Sollu — சொல்லு, "say it!"** (2026-07-10). The repo slug stays
+  `language-tutor`; the public name is the pedagogy in one imperative (forced output is
+  the engine) and keeps the origin language the star of the language-agnostic template.
+  Replaces the descriptive-only "language-tutor" as the project's face.
 - **Volley targets are Python's; the tutor writes only the situations**
   (carried in at `template-v2-source`). The tutor's taste concentrates reps on
   the same headliners; a binding, recency-demoted menu keeps deck coverage

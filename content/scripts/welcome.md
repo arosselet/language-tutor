@@ -79,7 +79,11 @@
 
 **ENGINEER:** இனிமே நான் பேசுவேன்.
 
-**HOST_A:** "From now on, I'll speak." That was the whole spec. It's public because that problem isn't rare. Your table, your language, your level. That's it. That's the pitch.
+**HOST_A:** "From now on, I'll speak." That was the whole spec. And the project is named for the word Anna says every time he hands you a line:
+
+**ANNA:** சொல்லு.
+
+**HOST_A:** Sollu. Say it. It's public because that problem isn't rare. Your table, your language, your level. That's it. That's the pitch.
 
 **HOST_B:** That's barely a pitch.
 
