@@ -39,7 +39,7 @@
 
 **HOST_B:** ...okay. That's unfair. That's her.
 
-**HOST_A:** One line back, typed right into the notification. Ten seconds. That counts — that's a whole rep. And if you tell it you're busy, it takes that as an answer and backs off. Its own instructions say a quiet week is information, not a failure.
+**HOST_A:** One line back, typed right into the notification. Ten seconds. That counts — one repetition, same as one push-up. They add up. And if you tell it you're busy, it takes that as an answer and backs off. Its own instructions say a quiet week is information, not a failure.
 
 [Pause: 1 sec]
 
