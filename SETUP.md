@@ -190,12 +190,14 @@ pretending day zero:
 3. **CI (optional, for the phone loop and scheduled pushes):** GitHub repo →
    Settings → Secrets and variables → Actions: `OPENROUTER_API_KEY`,
    `PUSH_WEBHOOK_URL`, and `GCP_SA_KEY` (a service-account JSON, only if
-   provider is google). The workflows in `.github/workflows/` tick on their
-   own once secrets exist; the knock's rails (waking hours, ≤N/day, min gap)
-   are already set from the interview timezone in `config/tutor.json`. Phone
-   notification wiring (webhook receiver, reply buttons):
-   **`docs/phone_loop.md`**. Not wiring this is fine — the daily chat session
-   is the core loop; knocks are an amplifier.
+   provider is google). **Then enable the ticks:** the `schedule:` blocks in
+   `.github/workflows/tutor-knock.yml` and `push-queue.yml` ship commented
+   out (a repo with nothing to say shouldn't tick) — uncomment them now. The
+   knock's rails (waking hours, ≤N/day, min gap) are already set from the
+   interview timezone in `config/tutor.json`. Phone notification wiring
+   (webhook receiver, reply buttons): **`docs/phone_loop.md`**. Not wiring
+   this is fine — the daily chat session is the core loop; knocks are an
+   amplifier.
 4. **TTS auth:** edge needs nothing. Google: `gcloud auth application-default
    login` locally (have the user run it themselves: `! gcloud auth
    application-default login`).

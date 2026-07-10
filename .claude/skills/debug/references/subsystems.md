@@ -35,7 +35,7 @@ POSTs the `PUSH_WEBHOOK_URL` webhook.
 # SAFE (read-only)
 gh run list --workflow=tutor-knock.yml --limit 10
 ```
-1. Check: did the workflow even trigger? If missing today: GitHub schedule slip (common under load) — wait or use `workflow_dispatch` to trigger manually.
+1. Check: did the workflow even trigger? The cron ships **commented out** until setup Phase 6 enables it — confirm the `schedule:` block in `tutor-knock.yml` is uncommented. If enabled but missing today: GitHub schedule slip (common under load) — wait or use `workflow_dispatch` to trigger manually.
 2. If it ran: `gh run view <run-id> --log` — look for `[rails] skip — ` lines. Common skip reasons:
    - `quiet hours (HH:MM …)` — the tick landed outside the waking window.
    - `daily cap reached (N/N)` — the day's fires are spent.
@@ -204,8 +204,8 @@ python scripts/sync_state.py update --produced-cold '<word>'
 
 | Workflow file | Name in Actions UI | Trigger | What it does |
 |---|---|---|---|
-| `tutor-knock.yml` | Tutor Knock | cron + dispatch | Runs `morning_knock.py`; commits audio + log. Skips clean pre-bootstrap |
-| `push-queue.yml` | Push Queue Drain | cron (*/30 min) | Runs `push_queue.py drain`; commits queue + log. Skips clean pre-bootstrap |
+| `tutor-knock.yml` | Tutor Knock | cron (ships commented out — Phase 6 enables) + dispatch | Runs `morning_knock.py`; commits audio + log. Skips clean pre-bootstrap |
+| `push-queue.yml` | Push Queue Drain | cron (*/30 min; ships commented out — Phase 6 enables) + dispatch | Runs `push_queue.py drain`; commits queue + log. Skips clean pre-bootstrap |
 | `log-knock-response.yml` | Log Knock Response | `repository_dispatch: knock-response` | Runs `knock_reply.py` (reply) or `sync_state.py knock-response` (tap) |
 | `smoke.yml` | Smoke Test | push to main (scripts/**, config/**, workflows/**, requirements.txt) | Runs `smoke_test.py` sandboxed |
 

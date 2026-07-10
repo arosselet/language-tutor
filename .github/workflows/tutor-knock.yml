@@ -7,8 +7,11 @@ name: Tutor Knock
 # clock; the rails do the precise, DST-correct filtering. (Trimming the cron to
 # your waking window's UTC superset is optional frugality.)
 on:
-  schedule:
-    - cron: "0 */2 * * *"
+  # DISABLED BY DEFAULT: a template clone has nothing to knock about, and an
+  # hourly-ish tick on an un-set-up repo is noise. Setup (SETUP.md Phase 6)
+  # uncomments this block when the phone loop is wired.
+  # schedule:
+  #   - cron: "0 */2 * * *"
   workflow_dispatch:
     inputs:
       force:

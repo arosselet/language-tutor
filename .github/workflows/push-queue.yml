@@ -6,8 +6,10 @@ name: Push Queue Drain
 # schedule dispatch can still slip under load — a live laptop session can
 # always drain locally for exact timing).
 on:
-  schedule:
-    - cron: "*/30 * * * *"     # every 30 min, off the top-of-hour congestion
+  # DISABLED BY DEFAULT: nothing queues pushes until the repo is bootstrapped
+  # and the phone loop is wired. Setup (SETUP.md Phase 6) uncomments this.
+  # schedule:
+  #   - cron: "*/30 * * * *"   # every 30 min, off the top-of-hour congestion
   workflow_dispatch: {}
 
 permissions:

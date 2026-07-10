@@ -75,7 +75,9 @@ hardcoding a language fact in a `.py`, stop — it goes in config or the pack.
 `tutor-knock.yml` (outreach tick — every 2h; the rails do the precise
 filtering, so trimming the cron is optional frugality), `push-queue.yml`
 (30-min drain), `log-knock-response.yml` (phone taps/replies in),
-`smoke.yml` (regression net on push). Secrets: `OPENROUTER_API_KEY`,
+`smoke.yml` (regression net on push). **The two cron ticks ship disabled**
+(their `schedule:` blocks commented out) — setup Phase 6 uncomments them
+when the phone loop is wired. Secrets: `OPENROUTER_API_KEY`,
 `PUSH_WEBHOOK_URL`, `GCP_SA_KEY` (google TTS only).
 
 ### Shells
