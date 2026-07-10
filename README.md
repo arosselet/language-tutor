@@ -23,10 +23,15 @@ Audio: [`welcome.mp3`](published_audio/welcome.mp3) · transcript:
 
 **The name:** *Sollu* (சொல்லு) is spoken Tamil for **"say it!"** — the
 one-word imperative the whole system is built around. It's what the reference
-tutor says when he hands you a situation and wants the line back from you;
-forced output is the engine, and the name keeps the template's origin
-language as its star. (The textbook form is சொல்லுங்கள் — and true to this
-repo's pedagogy, nobody at a kitchen table says that.)
+tutor — an elder brother — says when he hands you a situation and wants the
+line back; forced output is the engine, and the name keeps the template's
+origin language as its star. The form is itself a first lesson in register:
+சொல்லு is how an elder speaks *down* the table, and said *up* the table it
+takes the respect ending — சொல்லுங்க (*sollunga*). That ending is doing live
+work: it signals where you stand with the person you're facing. (Other endings
+have worn smooth — வாங்க வாங்க, "come, come!", greets everyone at the door
+alike.) Which endings carry meaning and which are just how the word sounds now
+is exactly the kind of thing the tutor derives for your language and teaches.
 
 **The worked example:** this template was extracted from
 [tamil-tutor](https://github.com/arosselet/tamil-tutor), a real system in daily
