@@ -107,3 +107,30 @@ what it replaces.
   the same headliners; a binding, recency-demoted menu keeps deck coverage
   honest. Same division as everywhere else: Python computes the menu, the LLM
   makes the meaning.
+- **Per-segment loudness normalization to −16 LUFS (measured static gain)** (2026-07-11).
+  Chirp3-HD voices across locales arrive up to 6 dB apart; the fr-CA guest in the welcome
+  episode was audibly hot. Static gain per segment (ffmpeg loudnorm probe → volume filter)
+  replaces per-voice hand-tuning. `render_audio.py → normalize_segment()`.
+- **Google TTS language_code must match the voice's locale, derived per-voice** (2026-07-11).
+  The API rejects a mismatch; a single config-wide `TTS_LANGUAGE_CODE` cannot serve a
+  polyglot Voice Map (e.g. the welcome episode spans en-US, es-US, fr-CA, ta-IN). Fix:
+  split the voice name on `-` to extract its locale. Root cause: multi-locale casts were
+  silently falling back to the pool when the explicit Voice Map failed to render.
+- **`clean_for_tts` must preserve periods** (2026-07-11). Stripping them renders long
+  lines as breathless run-ons — Chirp3 uses sentence stops for pacing. Root cause was
+  exposed by a ~120-word segment with no internal stops. `clean_memo_for_tts` already
+  documented this rule ("memo prose needs them"); the dialogue path now matches.
+- **Voice Map comment annotation breaks the regex** (2026-07-11). The header comment
+  must read exactly `Voice Map:` followed immediately by the JSON object. Adding a
+  parenthetical annotation — e.g. `Voice Map (Google Chirp3-HD):` — silently defeats
+  the match and falls back to the tutor.json pool, wrong cast with no warning.
+- **mp4 for GitHub uploads: 1 fps, `-g 9999`, no `-tune stillimage`** (2026-07-11).
+  For a still-image video, `stillimage` tune forces every frame to be an independent
+  I-frame (20 MB+). Correct approach: `-framerate 1 -g 9999` so only one I-frame
+  exists and ~413 empty P-frames follow. CRF 18 at 1 fps lands ~5.6 MB with full art
+  quality — under GitHub's 10 MB attachment cap.
+- **Welcome episode framing settled** (2026-07-11). Engineer-author + keen-learner
+  (not two skeptics; not "what does it optimize?"). Tamil is a worked example the
+  repo was extracted from, not its origin. Core demo: four axes English doesn't encode
+  (Tamil respect endings, Tamil inclusive/exclusive we, Turkish evidentiality, Japanese
+  pronoun-avoidance). Montréal and Arabic beats cut for runtime (target 6:30 → 6:54).
