@@ -469,8 +469,8 @@ async def main():
     for s, v in speaker_assignments.items():
         print(f"   - {s}: {v}")
 
-    temp_dir = "temp_audio_segments"
-    os.makedirs(temp_dir, exist_ok=True)
+    import tempfile
+    temp_dir = tempfile.mkdtemp(prefix="sollu_render_")
     os.makedirs(os.path.dirname(args.output_file) or ".", exist_ok=True)
 
     print("🎙️ Generating audio segments...")
@@ -511,7 +511,8 @@ async def main():
             f.write(final_audio_data)
         print(f"💾 Saved → {path}")
 
-    os.rmdir(temp_dir)
+    import shutil
+    shutil.rmtree(temp_dir, ignore_errors=True)
     print(f"✅ Success! ({len(final_audio_data)/(1024*1024):.1f} MB)")
 
     # Lifecycle hooks
