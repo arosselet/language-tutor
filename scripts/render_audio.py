@@ -160,7 +160,9 @@ def clean_for_tts(text: str) -> str:
     replacements = {"JSON": "jay-son", "CLI": "C-L-I"}
     for word, phonetic in replacements.items():
         text = re.sub(rf"\b{word}\b", phonetic, text, flags=re.IGNORECASE)
-    text = text.replace(".", "")
+    # Keep periods: Chirp3 leans on them for sentence pacing — a long line with
+    # them stripped renders as a breathless run-on (same rule clean_memo_for_tts
+    # already follows: "memo prose needs them").
     text = re.sub(r"[*_#`]", "", text)
     text = defang_hyphens(text)
     text = re.sub(r"\s+", " ", text).strip()
@@ -183,7 +185,11 @@ async def generate_segment_google(text: str, voice: str, index: int, temp_dir: s
     """Generate a single audio segment using Google Cloud TTS with exponential backoff."""
     client = texttospeech.TextToSpeechClient()
     input_text = texttospeech.SynthesisInput(text=text)
-    voice_params = texttospeech.VoiceSelectionParams(language_code=TTS_LANGUAGE_CODE, name=voice)
+    # A Google voice name embeds its locale ("fr-CA-Chirp3-HD-Leda" → "fr-CA")
+    # and the API rejects a mismatched language_code — derive it per voice so a
+    # polyglot Voice Map (e.g. the welcome episode) can cast across locales.
+    voice_lang = "-".join(voice.split("-")[:2]) if voice.count("-") >= 2 else TTS_LANGUAGE_CODE
+    voice_params = texttospeech.VoiceSelectionParams(language_code=voice_lang, name=voice)
     audio_config = texttospeech.AudioConfig(audio_encoding=texttospeech.AudioEncoding.MP3, sample_rate_hertz=24000)
     for attempt in range(max_retries):
         try:
@@ -198,6 +204,42 @@ async def generate_segment_google(text: str, voice: str, index: int, temp_dir: s
             wait = 2 ** attempt + random.random()
             print(f"   ⚠️ Retry {attempt+1}/{max_retries} after {wait:.1f}s — {e}")
             time.sleep(wait)
+
+
+TARGET_LUFS = -16.0  # podcast standard; every voice in a mixed cast lands here
+MAX_GAIN_DB = 10.0   # a mismeasured short segment must not blast or vanish
+
+
+def normalize_segment(filepath: str) -> str:
+    """Bring a segment to TARGET_LUFS with a measured static gain.
+
+    Chirp voices ship at noticeably different levels across locales (a guest
+    voice can land jarringly hot next to the hosts); measuring each segment
+    replaces per-voice gain hand-tuning. Static volume — not dynamic loudnorm —
+    preserves the voice's own dynamics. Output matches the stream shape the
+    concatenator expects (24 kHz mono MP3). Falls back to the original file
+    if measurement or re-encode fails (e.g. sub-400ms clips)."""
+    probe = subprocess.run(
+        ["ffmpeg", "-hide_banner", "-i", filepath,
+         "-af", "loudnorm=print_format=json", "-f", "null", "-"],
+        capture_output=True, text=True)
+    m = re.search(r'"input_i"\s*:\s*"(-?[\d.]+)"', probe.stderr)
+    if not m:
+        return filepath
+    gain = max(-MAX_GAIN_DB, min(MAX_GAIN_DB, TARGET_LUFS - float(m.group(1))))
+    if abs(gain) < 0.5:
+        return filepath
+    normed = filepath.replace(".mp3", "_norm.mp3")
+    res = subprocess.run(
+        ["ffmpeg", "-hide_banner", "-y", "-i", filepath,
+         "-af", f"volume={gain:.1f}dB", "-ar", "24000", "-ac", "1",
+         "-b:a", "48k", normed],
+        capture_output=True)
+    if res.returncode != 0 or not os.path.exists(normed):
+        return filepath
+    print(f"      ↳ level {float(m.group(1)):+.1f} LUFS → gain {gain:+.1f} dB")
+    os.remove(filepath)
+    return normed
 
 
 def get_raw_mp3_frames(filepath: str) -> bytes:
@@ -456,6 +498,7 @@ async def main():
         else:
             seg_file = await generate_segment_edge(clean_text, voice, i, temp_dir)
 
+        seg_file = normalize_segment(seg_file)
         final_audio_data.extend(get_raw_mp3_frames(seg_file))
         final_audio_data.extend(SILENCE_FRAME * 21) # ~500ms breath between lines
         os.remove(seg_file)
