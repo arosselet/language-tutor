@@ -263,28 +263,31 @@ def remaining_room(klog: list, now: datetime) -> str:
                             f"lore dose must take a different vein than that one.")
     # Eavesdrop cadence — catch items advance ONLY through eavesdrop; surface a
     # warning when the cadence has lapsed so the tutor doesn't keep skipping it.
+    # Gated on EAVESDROP_VOICE: the mandate only offers the modality when the
+    # config names a voice, and the RAILS must never urge a move off the menu.
     eavesdrop_str = ""
-    try:
-        from suggest_targets import deck_status
-        from sync_state import LEXICON_PATH as _LP
-        _lex = load_json(_LP) or {}
-        _deck = deck_status(_lex)
-        _catch_pending = (_deck.get("catch_pending") or []) if _deck else []
-        if _catch_pending:
-            le = last_eavesdrop(klog)
-            if le is None:
-                eavesdrop_str = (f"\n  ⚠ Eavesdrop: {len(_catch_pending)} catch item(s) pending, "
-                                 f"NEVER fired — catch advances ONLY through eavesdrop; "
-                                 f"this is the highest-value move right now.")
-            else:
-                ld = local_date(le.get("timestamp", ""))
-                age = (now_local.date() - ld).days if ld else EAVESDROP_CADENCE_DAYS
-                if age >= EAVESDROP_CADENCE_DAYS:
+    if EAVESDROP_VOICE:
+        try:
+            from suggest_targets import deck_status
+            from sync_state import LEXICON_PATH as _LP
+            _lex = load_json(_LP) or {}
+            _deck = deck_status(_lex)
+            _catch_pending = (_deck.get("catch_pending") or []) if _deck else []
+            if _catch_pending:
+                le = last_eavesdrop(klog)
+                if le is None:
                     eavesdrop_str = (f"\n  ⚠ Eavesdrop: {len(_catch_pending)} catch item(s) pending, "
-                                     f"last eavesdrop {age}d ago (cadence: every {EAVESDROP_CADENCE_DAYS}d) — "
-                                     f"consider eavesdrop this tick.")
-    except Exception:
-        pass  # never let a cadence check kill a reach
+                                     f"NEVER fired — catch advances ONLY through eavesdrop; "
+                                     f"this is the highest-value move right now.")
+                else:
+                    ld = local_date(le.get("timestamp", ""))
+                    age = (now_local.date() - ld).days if ld else EAVESDROP_CADENCE_DAYS
+                    if age >= EAVESDROP_CADENCE_DAYS:
+                        eavesdrop_str = (f"\n  ⚠ Eavesdrop: {len(_catch_pending)} catch item(s) pending, "
+                                         f"last eavesdrop {age}d ago (cadence: every {EAVESDROP_CADENCE_DAYS}d) — "
+                                         f"consider eavesdrop this tick.")
+        except Exception:
+            pass  # never let a cadence check kill a reach
 
     return (f"RAILS (hard — stay well inside; silence is free):\n"
             f"  Waking window {WAKING_START_HOUR}:00–{WAKING_END_HOUR}:00 {now_local.tzname()}; "
