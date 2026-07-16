@@ -134,3 +134,10 @@ what it replaces.
   repo was extracted from, not its origin. Core demo: four axes English doesn't encode
   (Tamil respect endings, Tamil inclusive/exclusive we, Turkish evidentiality, Japanese
   pronoun-avoidance). Montréal and Arabic beats cut for runtime (target 6:30 → 6:54).
+- **Learner-dependent surfaces are setup-time elaborations, not template
+  opinions** (2026-07-16). When a backported feature's value depends on the end
+  user (deck tiers were the instance: whether registers have a pecking order is
+  the learner's reality), the template ships the *mechanism* behind a config key
+  plus a worked example in SETUP.md as grist for the setup agent — never the
+  reference impl's concrete values hardcoded in a script. Replaces the
+  half-Tamil DECK_TIERS map that rode in with the 07-16 backport.
