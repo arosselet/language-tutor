@@ -31,6 +31,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 from generate_callbacks import due_callbacks, load_json, days_since, NEVER_SURFACED
 from config import DECK_NAME, DECK_LABEL
+from sync_state import is_unseen
+
+# Windows consoles default to cp1252 and can't print some scripts (2026-07-15).
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 BASE = Path(__file__).parent.parent
 LEXICON_PATH = BASE / "progress" / "lexicon.json"
@@ -65,6 +70,26 @@ INGREDIENTS = {
     "stakes": "something real is on the line, not just a chore",
     "genre": "a scam, a confession, a ghost story, a flirtation",
 }
+
+
+# Deck tier ordering — priority-ordered sprint sub-groups. The register strings
+# come from the curriculum deck file's "register" field. Ordering only — nothing
+# leaves the deck; the ambition is still to clear it whole.
+DECK_TIERS = {"antifreeze": 0, "public": 0, "frame": 0,
+              "faq": 1, "social": 1,
+              "gossip": 2, "zinger": 2}
+TIER_NAMES = {0: "survival", 1: "core", 2: "dessert"}
+
+
+def deck_registers(deck: str = DECK_NAME) -> dict:
+    """word → curriculum register, joined at menu time from the deck's curriculum
+    file — ordering is a menu concern, not state, so the lexicon schema stays
+    frozen. Missing file or register degrades to flat ordering."""
+    path = BASE / "curriculum" / f"{deck}_deck.json"
+    if not path.exists():
+        return {}
+    return {i.get("word", ""): i.get("register", "")
+            for i in json.loads(path.read_text(encoding="utf-8"))}
 
 
 def floor_gap_targets(lexicon: dict, today, max_n: int) -> list[dict]:
@@ -108,6 +133,7 @@ def deck_status(lexicon: dict, deck: str = DECK_NAME) -> dict | None:
     members = [(w, r) for w, r in lexicon.items() if r.get("deck") == deck]
     if not members:
         return None
+    regs = deck_registers(deck)
     fire = [(w, r) for w, r in members if r.get("direction", "fire") != "catch"]
     catch = [(w, r) for w, r in members if r.get("direction") == "catch"]
     cold = [w for w, r in fire if r.get("production") == "cold"]
@@ -115,9 +141,12 @@ def deck_status(lexicon: dict, deck: str = DECK_NAME) -> dict | None:
         "word": w, "gloss": r.get("gloss", ""),
         "kind": "frame" if r.get("type") == "pattern" else r.get("type", "chunk"),
         "recognition": r.get("recognition"), "production": r.get("production", "none"),
+        "tier": TIER_NAMES.get(DECK_TIERS.get(regs.get(w, ""), 1)),
+        "unseen": is_unseen(r),
     } for w, r in fire if r.get("production") != "cold"]
-    # Ripest first: hinted before none, solid before comfortable.
-    pending.sort(key=lambda c: (PROD_ORDER.get(c["production"], 1),
+    # Tier first; within a tier, ripest first: hinted before none, solid before comfortable.
+    pending.sort(key=lambda c: (DECK_TIERS.get(regs.get(c["word"], ""), 1),
+                                PROD_ORDER.get(c["production"], 1),
                                 RECOG_ORDER.get(c["recognition"], 1), c["word"]))
     catch_pending = [{
         "word": w, "gloss": r.get("gloss", ""),
@@ -142,7 +171,8 @@ def engines_to_fire(lexicon: dict) -> list[dict]:
         if r.get("direction") == "catch":
             continue  # ear-only patterns — train the ear, don't force
 
-        out.append({"key": w, "gloss": r.get("gloss", ""), "production": r.get("production", "none")})
+        out.append({"key": w, "gloss": r.get("gloss", ""), "production": r.get("production", "none"),
+                    "unseen": is_unseen(r)})
     out.sort(key=lambda c: (c["production"] != "hinted", c["key"]))  # hinted (riper) first
     return out
 
@@ -248,6 +278,7 @@ def main():
 
     lexicon = load_json(LEXICON_PATH)
     word_pool = load_json(WORD_POOL_PATH)
+    learner = load_json(BASE / "progress" / "learner.json") or {}
     # An EMPTY lexicon ({}) is a valid day-zero state — the ticket still serves
     # the new-candidates section. Only a MISSING file is an error.
     if lexicon is None or not word_pool:
@@ -259,6 +290,18 @@ def main():
     print("SESSION TICKET — Python computes the menu; the tutor picks the story.")
     print("=" * 60)
 
+    # Next engine focus — the deliberate unlock priority (set via sync_state update
+    # --next-engine). Surfaced first so the tutor never re-derives the order session by session.
+    next_engine_key = learner.get("next_engine", "")
+    if next_engine_key and lexicon:
+        r = lexicon.get(next_engine_key, {})
+        prod = r.get("production", "none")
+        if prod != "cold":
+            gloss = r.get("gloss", "")
+            unseen_flag = " · ⚠ UNSEEN — teach first (show it), NEVER cold-quiz" if is_unseen(r) else ""
+            print(f"\n🎯 NEXT ENGINE: {next_engine_key} — {gloss}  [production: {prod}{unseen_flag}]")
+            print(f"   One cold novel instance of this pattern = engine online.")
+
     # The deck — the finite, deadline-driven sprint set. When it exists it is the
     # HEADLINE: force its not-yet-cold members first (the tutor narrates the countdown).
     deck = deck_status(lexicon)
@@ -269,7 +312,10 @@ def main():
               f"Not-yet-cold ({len(deck['pending'])}) — pick from these first:")
         for t in deck["pending"][:12]:
             tag = "hinted→cold" if t["production"] == "hinted" else f"{t['recognition']}, cold-pending"
-            print(f"  - [{t['kind']}] {t['word']} — {t['gloss'] or '[no gloss]'}  [{tag}]")
+            if t.get("unseen"):
+                tag += " · ⚠ UNSEEN — teach first (show it, gloss it), NEVER cold-quiz"
+            tier = f" · {t['tier']}" if t.get("tier") else ""
+            print(f"  - [{t['kind']}{tier}] {t['word']} — {t['gloss'] or '[no gloss]'}  [{tag}]")
         if deck["catch_total"]:
             print(f"\n  EAR-ONLY ({deck['caught']}/{deck['catch_total']} solid) — eavesdrop/soak targets; "
                   f"win = recognition, never force these to fire:")
@@ -304,6 +350,8 @@ def main():
         print("-" * 60)
         for e in engines:
             tag = "hinted→cold" if e["production"] == "hinted" else "cold-pending"
+            if e.get("unseen"):
+                tag += " · ⚠ UNSEEN — teach first (show it), NEVER cold-quiz"
             print(f"  - {e['key']} — {e['gloss'] or '[no gloss]'}  [{tag}]")
 
     # 2. Callbacks — soft soak (reused logic)
