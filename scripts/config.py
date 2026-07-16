@@ -34,7 +34,7 @@ _DEFAULTS = {
         "volley_size": 3,
     },
     "deck": {"name": "sprint", "label": "Sprint Deck",
-             "deadline": None, "deadline_label": "deadline"},
+             "deadline": None, "deadline_label": "deadline", "tiers": []},
 }
 
 
@@ -119,6 +119,15 @@ VOLLEY_SIZE = OUTREACH.get("volley_size", 3)   # deck items per volley knock
 DECK = CONFIG["deck"]
 DECK_NAME = DECK.get("name", "sprint")
 DECK_LABEL = DECK.get("label", "Sprint Deck")
+
+# Optional priority tiers — an ordered list the setup agent elaborates WITH the
+# learner (SETUP.md Phase 5) when the deck's registers have a real pecking order:
+#   "tiers": [{"name": "survival", "registers": ["antifreeze", "public"]}, ...]
+# Position = priority. Absent/empty ⇒ flat ripeness ordering, no tier labels.
+# Ordering only — nothing leaves the deck; the ambition is still to clear it whole.
+DECK_TIERS = {reg: i for i, t in enumerate(DECK.get("tiers") or [])
+              for reg in t.get("registers", [])}
+TIER_NAMES = {i: t.get("name", "") for i, t in enumerate(DECK.get("tiers") or [])}
 
 
 def deck_deadline():

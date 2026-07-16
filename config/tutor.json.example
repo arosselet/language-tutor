@@ -59,6 +59,7 @@
     "name": "sprint",
     "label": "Sprint Deck",
     "deadline": null,
-    "deadline_label": "deadline"
+    "deadline_label": "deadline",
+    "tiers": []
   }
 }

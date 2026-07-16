@@ -28,6 +28,7 @@ profile.md says the number.
 | `outreach.*` | waking window, daily cap, min gap, LLM model | make knocks quieter/louder; swap models |
 | `outreach.volley_size` | deck items per volley knock (the daily blitz) | raise it when the deck's burn rate trails the deadline |
 | `deck.*` | sprint name/label/deadline | set when a real date appears; clear after |
+| `deck.tiers` | ordered priority groups over the deck's registers (position = priority; see SETUP.md Phase 5 for the worked example) | set when some registers MUST land before others matter; empty = flat ripeness ordering |
 
 ### `protocol/` — the pedagogy and the people
 | File | Owns | Tweak when |

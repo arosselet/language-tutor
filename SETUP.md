@@ -177,6 +177,15 @@ pretending day zero:
   possible, and load it: `python scripts/sync_state.py seed-deck
   curriculum/deck.json`. Set `deck.deadline` (+ a vivid `deadline_label`) in
   config.
+- Ask whether the deck's registers have a real pecking order — if some items
+  MUST land before others matter at all, elaborate `deck.tiers` in config: an
+  ordered list, position = priority, each tier naming its registers. Worked
+  example (a trip-to-the-in-laws deck): `[{"name": "survival", "registers":
+  ["antifreeze", "public", "frame"]}, {"name": "core", "registers": ["faq",
+  "social"]}, {"name": "dessert", "registers": ["gossip", "zinger"]}]` —
+  freeze-repair lines and public transactions outrank delighting the room;
+  gossip and zingers are dessert. Ordering only — nothing leaves the deck.
+  No real pecking order → leave `tiers` empty; the menu sorts by ripeness alone.
 
 ### Phase 6 — Wire It Up
 

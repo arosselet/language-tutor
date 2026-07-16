@@ -30,7 +30,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 from generate_callbacks import due_callbacks, load_json, days_since, NEVER_SURFACED
-from config import DECK_NAME, DECK_LABEL
+from config import DECK_NAME, DECK_LABEL, DECK_TIERS, TIER_NAMES
 from sync_state import is_unseen
 
 # Windows consoles default to cp1252 and can't print some scripts (2026-07-15).
@@ -72,24 +72,18 @@ INGREDIENTS = {
 }
 
 
-# Deck tier ordering — priority-ordered sprint sub-groups. The register strings
-# come from the curriculum deck file's "register" field. Ordering only — nothing
-# leaves the deck; the ambition is still to clear it whole.
-DECK_TIERS = {"antifreeze": 0, "public": 0, "frame": 0,
-              "faq": 1, "social": 1,
-              "gossip": 2, "zinger": 2}
-TIER_NAMES = {0: "survival", 1: "core", 2: "dessert"}
-
-
 def deck_registers(deck: str = DECK_NAME) -> dict:
     """word → curriculum register, joined at menu time from the deck's curriculum
     file — ordering is a menu concern, not state, so the lexicon schema stays
-    frozen. Missing file or register degrades to flat ordering."""
-    path = BASE / "curriculum" / f"{deck}_deck.json"
-    if not path.exists():
-        return {}
-    return {i.get("word", ""): i.get("register", "")
-            for i in json.loads(path.read_text(encoding="utf-8"))}
+    frozen. Missing file or register degrades to flat ordering. Tier priorities
+    themselves live in config (deck.tiers) — a setup-time elaboration, not a
+    template opinion."""
+    for path in (BASE / "curriculum" / f"{deck}_deck.json",
+                 BASE / "curriculum" / "deck.json"):
+        if path.exists():
+            return {i.get("word", ""): i.get("register", "")
+                    for i in json.loads(path.read_text(encoding="utf-8"))}
+    return {}
 
 
 def floor_gap_targets(lexicon: dict, today, max_n: int) -> list[dict]:
@@ -141,11 +135,12 @@ def deck_status(lexicon: dict, deck: str = DECK_NAME) -> dict | None:
         "word": w, "gloss": r.get("gloss", ""),
         "kind": "frame" if r.get("type") == "pattern" else r.get("type", "chunk"),
         "recognition": r.get("recognition"), "production": r.get("production", "none"),
-        "tier": TIER_NAMES.get(DECK_TIERS.get(regs.get(w, ""), 1)),
+        "tier": TIER_NAMES.get(DECK_TIERS.get(regs.get(w, ""), len(TIER_NAMES))),
         "unseen": is_unseen(r),
     } for w, r in fire if r.get("production") != "cold"]
     # Tier first; within a tier, ripest first: hinted before none, solid before comfortable.
-    pending.sort(key=lambda c: (DECK_TIERS.get(regs.get(c["word"], ""), 1),
+    # Unlisted registers sink below every configured tier; no tiers ⇒ flat.
+    pending.sort(key=lambda c: (DECK_TIERS.get(regs.get(c["word"], ""), len(TIER_NAMES)),
                                 PROD_ORDER.get(c["production"], 1),
                                 RECOG_ORDER.get(c["recognition"], 1), c["word"]))
     catch_pending = [{
