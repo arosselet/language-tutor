@@ -134,6 +134,13 @@ what it replaces.
   repo was extracted from, not its origin. Core demo: four axes English doesn't encode
   (Tamil respect endings, Tamil inclusive/exclusive we, Turkish evidentiality, Japanese
   pronoun-avoidance). Montréal and Arabic beats cut for runtime (target 6:30 → 6:54).
+- **Second milestone re-sync — carried in at `template-v3-source`** (2026-07-16;
+  recorded 2026-07-19, backfilled — the sync pre-dated the reference impl's
+  `/backport` distill contract). The engine advance since v2, re-applied
+  semantically: knock_id reply correlation, fenced-JSON parse fallback,
+  lore/eavesdrop cooldown guards, teach-first `introduces` + `is_unseen()`,
+  pull-before-read status banner, delivery retry, deck-tier ordering (since
+  re-seamed as `deck.tiers` config — next entry).
 - **Learner-dependent surfaces are setup-time elaborations, not template
   opinions** (2026-07-16). When a backported feature's value depends on the end
   user (deck tiers were the instance: whether registers have a pecking order is
