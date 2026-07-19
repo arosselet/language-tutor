@@ -19,6 +19,14 @@ regressions below are inherited from the reference implementation:
   #4  hinted-forever: reveal-capped fires now graduate cross-day
   #5  volley knock: binding targets + deterministic chain advance
   #6  eavesdrop dose: catch replies move recognition only, never production
+  #7  stacked notifications: replies correlate by knock_id (KF-9)
+  #8  transient delivery blip killed a logged knock — push retries, final failure raises
+  #9  stale clone read yesterday's story; comma-joined soak payload never matched
+  #10 chat mid-volley erased the open ask; Python re-presents it (KF-11)
+  #11 [SFX] lines silently dropped by the renderer — now a beat of air
+  #12 string-mission sidecar crashed the ticket sort; ticket smoke-runs end-to-end
+  (The watchdog case in the reference impl does not port — the studio watchdog
+  is local automation the template deliberately leaves out.)
 """
 import argparse
 import importlib
@@ -751,6 +759,335 @@ def s13_eavesdrop(mk, kr, sb: Path):
     check("missed drift moves no axis", after["recognition"] == before["recognition"])
 
 
+def s14_reply_correlation(kr):
+    """KF-9: notifications stack (unique tag per knock); taps and replies carry
+    the knock's log timestamp back as knock_id. find_knock targets the exact
+    entry; a missing/stale/empty id returns None so callers fall back to
+    last-fired (pre-migration notifications stay judgeable)."""
+    print("\n14. Reply correlation (stacked notifications)")
+    klog = [
+        {"acted": True, "timestamp": "2026-07-11T08:00:00+00:00", "move": "volley"},
+        {"acted": False, "timestamp": "2026-07-11T10:00:00+00:00", "move": "silence"},
+        {"acted": True, "timestamp": "2026-07-11T12:00:00+00:00", "move": "lore memo"},
+    ]
+    hit = kr.find_knock(klog, "2026-07-11T08:00:00+00:00")
+    check("find_knock targets an older stacked knock by id",
+          hit is not None and hit["move"] == "volley")
+    check("unknown id → None (caller falls back to last-fired)",
+          kr.find_knock(klog, "2026-07-13T00:00:00+00:00") is None)
+    check("empty id → None (id-less events keep last-fired behavior)",
+          kr.find_knock(klog, "") is None)
+    check("silence entries never match (no notification existed)",
+          kr.find_knock(klog, "2026-07-11T10:00:00+00:00") is None)
+
+
+def s15_push_retry(mk):
+    print("\n15. Push delivery retry (regression #8)")
+    import os
+    import urllib.error
+
+    class FakeResp:
+        status = 200
+        def __enter__(self): return self
+        def __exit__(self, *a): return False
+
+    calls = {"n": 0}
+    sleeps = []
+    real_urlopen, real_sleep = mk.urllib.request.urlopen, mk.time.sleep
+    os.environ["PUSH_WEBHOOK_URL"] = "https://smoke.invalid/hook"
+    try:
+        mk.time.sleep = sleeps.append
+
+        def flaky(req, *a, **kw):
+            calls["n"] += 1
+            if calls["n"] < 3:
+                raise urllib.error.URLError(OSError("Temporary failure in name resolution"))
+            return FakeResp()
+        mk.urllib.request.urlopen = flaky
+        mk.push_to_phone("smoke", None, knock_id="smoke")
+        check("two blips then success — delivered", calls["n"] == 3, f"{calls['n']} calls")
+        check("backoff between attempts", sleeps == [5, 10], f"sleeps={sleeps}")
+
+        calls["n"] = 0
+        def dead(req, *a, **kw):
+            calls["n"] += 1
+            raise urllib.error.URLError(OSError("no route"))
+        mk.urllib.request.urlopen = dead
+        try:
+            mk.push_to_phone("smoke", None, knock_id="smoke")
+            check("unreachable webhook still raises", False, "did not raise")
+        except OSError:
+            check("unreachable webhook still raises", True)
+        check("gave up after 3 attempts", calls["n"] == 3, f"{calls['n']} calls")
+    finally:
+        mk.urllib.request.urlopen, mk.time.sleep = real_urlopen, real_sleep
+        os.environ.pop("PUSH_WEBHOOK_URL", None)
+
+
+def s16_stale_clone_gates(sb: Path):
+    print("\n16. Stale-clone gates + payload canon (regression #9)")
+    # A session opened on a clone behind origin re-collects paid field missions
+    # and misses the morning trailer; a comma-joined soak payload never matches
+    # an episode's words. The pure halves of the fixes:
+    ss = importlib.import_module("sync_state")
+
+    check("behind origin → STALE banner", "STALE" in (ss.sync_banner((14, 0)) or ""))
+    check("ahead only → unpushed warning", "not on origin" in (ss.sync_banner((0, 1)) or ""))
+    check("in sync → no banner", ss.sync_banner((0, 0)) is None)
+    check("sync unknown → soft warning", "SYNC UNKNOWN" in (ss.sync_banner(None) or ""))
+
+    check("comma-joined payload splits",
+          ss.canon_payload([f"frame:x,{WORD_A}"]) == ["frame:x", WORD_A])
+    check("clean payload passes through",
+          ss.canon_payload(["a", "b"]) == ["a", "b"])
+
+    check("no record → unseen", ss.is_unseen({}))
+    check("surfaced → not unseen", not ss.is_unseen({"last_surfaced": "2026-07-01"}))
+    check("in an episode → not unseen", not ss.is_unseen({"seen_in": ["M60"]}))
+
+    trailer = {"date": "2026-07-15", "move": "session bell trailer", "body": f"{WORD_A} today"}
+    volley = {"date": "2026-07-15", "move": "afternoon volley", "body": "…"}
+    check("newest-knock trailer with no session after → unpaid",
+          ss.unpaid_trailer([volley, trailer], "2026-07-13") is trailer)
+    check("session on/after trailer date → paid",
+          ss.unpaid_trailer([trailer], "2026-07-15") is None)
+    check("newest knock not a trailer → nothing owed",
+          ss.unpaid_trailer([trailer, volley], "2026-07-13") is None)
+    check("knocks_since filters to the gap",
+          [k["date"] for k in ss.knocks_since([{"date": "2026-07-10"}, {"date": "2026-07-14"}],
+                                              "2026-07-13")] == ["2026-07-14"])
+
+
+def s17_campaign_digest(mk, sb: Path):
+    print("\n17. Campaign block in the knock digest")
+    # The campaign is learner-initiated prose in profile.md; the digest carries
+    # it so the cloud tutor steers by it. No section / placeholder / missing ⇒ "".
+    profile = sb / "progress" / "profile.md"
+    original = profile.read_text(encoding="utf-8")
+    # The day-zero example profile ships the section with the placeholder line.
+    check("day-zero placeholder → no campaign block", mk.campaign_block() == "")
+
+    profile.write_text(
+        original.split("## The Campaign — This Week", 1)[0]
+        + "## The Campaign — This Week\n\n"
+        "> Contract: see daily_session.md.\n\n"
+        f"**Ask-machine week** (07-20 → 07-26): {WORD_A}, {WORD_B}.\n"
+        "- Mon: teach day\n\n## After The Campaign\n\nunrelated\n",
+        encoding="utf-8")
+    block = mk.campaign_block()
+    check("live campaign lands in the digest", "Ask-machine week" in block)
+    check("contract blockquote stripped", "Contract" not in block)
+    check("next section not swept in", "unrelated" not in block)
+
+    profile.write_text(profile.read_text(encoding="utf-8").replace(
+        f"**Ask-machine week** (07-20 → 07-26): {WORD_A}, {WORD_B}.\n"
+        "- Mon: teach day",
+        "_(no campaign live yet — kick one off at the next session)_"),
+        encoding="utf-8")
+    check("placeholder → no campaign block", mk.campaign_block() == "")
+    profile.write_text(original, encoding="utf-8")
+
+
+# Word budgets for the prose surfaces (from the reference impl, 2026-07-16): every
+# incident lands as a paragraph, and prose only accumulates — "earn its place"
+# doesn't enforce itself. Growth past a budget is a red run; raising a budget must
+# ride the same diff as the growth, and the commit names the lines it retired
+# (/extend Gate 4). A file that keeps hitting its ceiling is carrying crud or
+# doing two jobs — a split-or-retire signal, never a bump-the-number reflex.
+PROSE_BUDGETS = {
+    "protocol/persona.md.template": 1800,
+    "protocol/constitution.md": 1950,
+    "protocol/daily_session.md": 1350,
+    "OUTREACH_MANDATE": 2100,
+    "JUDGE_MANDATE": 1500,
+    "CATCH_JUDGE_MANDATE": 300,
+}
+
+
+def s18_prose_budgets(mk, kr, sb: Path):
+    print("\n18. Protocol prose word budgets (the subtraction mechanism)")
+    strings = {"OUTREACH_MANDATE": mk.OUTREACH_MANDATE,
+               "JUDGE_MANDATE": kr.JUDGE_MANDATE,
+               "CATCH_JUDGE_MANDATE": kr.CATCH_JUDGE_MANDATE}
+    for rel, budget in PROSE_BUDGETS.items():
+        words = (len(strings[rel].split()) if rel in strings
+                 else len((sb / rel).read_text(encoding="utf-8").split()))
+        check(f"{rel}: {words}/{budget} words", words <= budget,
+              f"over by {words - budget} — retire lines, or raise the budget in this "
+              f"same diff and name what it retired")
+
+
+def s20_fielding(mk, kr, sb: Path):
+    """The fielding dose: a target-language question fired AT the learner, reply
+    graded as production by the NORMAL judge — never the catch judge. The
+    stimulus half of the exchange has its own channel."""
+    print("\n20. Fielding dose — heard question in, produced answer out")
+    prog = sb / "progress"
+    lex_path, klog_path = prog / "lexicon.json", prog / "knock_log.json"
+
+    raw = {"act": True, "modality": "fielding", "move": "field the FAQ",
+           "rationale": "smoke", "next_check_hours": 3, "memo_script": "",
+           "notification_body": "they're asking you something — answer",
+           "expected_target": WORD_A, "target_revealed": True, "schedule": None}
+    d = mk.normalize_decision(dict(raw))
+    check("question-less fielding degrades to text", d["modality"] == "text")
+    raw["memo_script"] = "¿ya comiste?"
+    d = mk.normalize_decision(dict(raw))
+    check("fielding keeps modality, answer unrevealed",
+          d["modality"] == "fielding" and d["target_revealed"] is False)
+
+    mk.rails_gate = lambda force, now=None: (True, "smoke-open")
+    mk.build_digest = lambda: "SMOKE DIGEST"
+    mk.push_to_phone, mk.commit_and_push = Recorder(), Recorder()
+
+    async def fake_render(memo_script, out_path, voice=None):
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_bytes(b"smoke-mp3")
+        fake_render.voice = voice
+    mk.render_memo = fake_render
+    mk.decide = lambda digest, vt=None: dict(d)
+    sys.argv = ["morning_knock.py"]
+    mk.main()
+    entry = read_json(klog_path)[-1]
+    check("fielding renders audio and logs the url", bool(entry.get("audio_url")))
+    check("fielding speaks in the second voice, not the tutor's",
+          fake_render.voice == mk.EAVESDROP_VOICE)
+
+    write_json(lex_path, {WORD_A: {
+        "gloss": "enough", "phonetic": [], "recognition": "comfortable",
+        "production": "none", "seen_in": ["M1"], "last_surfaced": "2026-07-01",
+        "deck": "trip", "direction": "fire", "type": "chunk"}})
+    kr.push_to_phone, kr.commit_and_push = Recorder(), Recorder()
+    catch_calls = Recorder()
+    kr.judge_catch = catch_calls
+    kr.judge = lambda k, r, t, h=None, rr=None: canned_verdict([(WORD_A, "cold")])
+    sys.argv = ["knock_reply.py", WORD_A]
+    kr.main()
+    check("fielding reply routes to the PRODUCTION judge", len(catch_calls) == 0)
+    check("fielded answer moves the production axis",
+          read_json(lex_path)[WORD_A]["production"] == "cold")
+
+
+def s21_volley_represent(kr, sb: Path):
+    """KF-11: a chat/meta reply mid-volley let the open ask vanish and the judge
+    improvised the chain surface. Python re-presents the pinned ask on chat
+    verdicts and marks the chain closed after the last judged item."""
+    print("\n21. Volley re-present on chat replies (KF-11)")
+    prog = sb / "progress"
+    klog_path = prog / "knock_log.json"
+    write_json(prog / "lexicon.json", {})
+    kr.commit_and_push = Recorder()
+
+    def volley_knock(nxt: int) -> dict:
+        return {"date": "2026-07-18", "timestamp": f"2026-07-18T15:0{nxt}:00+00:00",
+                "acted": True, "modality": "volley", "move": "smoke volley",
+                "body": "⚡ volley 1/3 — ask one", "expected_target": "t1",
+                "target_revealed": False, "volley_next": nxt,
+                "pinned_target": f"t{min(nxt, 3)}", "pinned_revealed": False,
+                "volley": [{"target": "t1", "ask": "ask one"},
+                           {"target": "t2", "ask": "ask two"},
+                           {"target": "t3", "ask": "ask three"}]}
+
+    def reply(text: str, verdict: dict):
+        kr.judge = lambda k, r, t, h=None, rr=None: verdict
+        kr.push_to_phone = pushes = Recorder()
+        sys.argv = ["knock_reply.py", text]
+        kr.main()
+        return pushes[-1][0]
+
+    chat = {"verdict": "chat", "reply_line": "ha, all good", "rationale": "smoke",
+            "fired": [], "follow_up_ask": "", "follow_up_target": "",
+            "follow_up_target_revealed": True, "meta_note": "", "schedule": None}
+
+    # the one owner of "the current ask" — judge context and re-presents both read it
+    check("volley_open_ask names the current item",
+          kr.volley_open_ask(volley_knock(nxt=2)) == "2/3 — ask two")
+    check("volley_open_ask starts at ask one",
+          kr.volley_open_ask(volley_knock(nxt=1)) == "1/3 — ask one")
+    check("volley_open_ask clamps past the end",
+          kr.volley_open_ask(volley_knock(nxt=3)) == "3/3 — ask three")
+    check("no volley → no open ask", kr.volley_open_ask({"body": "x"}) is None)
+
+    # chat mid-volley → the pinned ask is re-presented; pin and chain untouched
+    write_json(klog_path, [volley_knock(nxt=2)])
+    body = reply("wait, which one are we on?", dict(chat))
+    entry = read_json(klog_path)[-1]
+    check("chat mid-volley re-presents the open ask", "still open · 2/3 — ask two" in body, body)
+    check("pin does not move on chat", entry["volley_next"] == 2 and entry["pinned_target"] == "t2")
+    check("chat does not count as a chain step", entry.get("chained", 0) == 0)
+
+    # judged reply on the LAST item closes the chain
+    write_json(klog_path, [volley_knock(nxt=3)])
+    miss = dict(chat); miss["verdict"] = "miss"; miss["reply_line"] = "that one is 'ask three'"
+    body = reply("no idea", miss)
+    entry = read_json(klog_path)[-1]
+    check("last judged item marks the volley done", entry.get("volley_done") is True)
+    check("no re-present after the chain closes", "still open" not in body, body)
+
+    # chat AFTER the volley is done stays a plain chat
+    body = reply("thanks!", dict(chat))
+    check("chat on a finished volley adds no ask", "still open" not in body, body)
+
+
+def s22_sfx_pause(sb: Path):
+    print("\n22. [SFX] cues render as air, never dropped (regression #11)")
+    ra = importlib.import_module("render_audio")
+    script = sb / "content" / "scripts" / "smoke_sfx.md"
+    script.write_text(
+        "# Tier 2, Mission 99 — Smoke\n\n"
+        "[SFX: A phone rings in the dark.]\n\n"
+        "**HOST (M):** Three fourteen in the morning.\n\n"
+        "[SFX: Sheets rustle.]\n"
+        "[Pause: 2 sec]\n", encoding="utf-8")
+    dialogue, _ = ra.parse_script(str(script))
+    check("SFX cue becomes a pause",
+          dialogue[0]["speaker"] == "PAUSE" and dialogue[0]["seconds"] == 1.5,
+          f"got {dialogue[0]}")
+    check("SFX text never reaches a voice",
+          not any("phone rings" in d.get("text", "") for d in dialogue))
+    check("adjacent SFX + pause coalesce",
+          dialogue[-1] == {"speaker": "PAUSE", "seconds": 3.5}, f"got {dialogue[-1]}")
+
+
+def s23_ticket_end_to_end(sb: Path):
+    print("\n23. suggest_targets: the ticket runs end-to-end (regression #12)")
+    import contextlib
+    import io
+    st = importlib.import_module("suggest_targets")
+    # Bootstrap-shaped curriculum fixture: the live files a /setup would create.
+    cur = sb / "curriculum"
+    for ex in cur.glob("*.example"):
+        shutil.copy(ex, cur / ex.name[: -len(".example")])
+    # The proven crash class: a reference sidecar carrying a STRING mission must
+    # never enter (or crash) the integer mission sort.
+    (sb / "content" / "scripts" / "real_ep.tags.json").write_text(
+        json.dumps({"mission": 3, "register": "domestic"}), encoding="utf-8")
+    (sb / "content" / "scripts" / "special_smoke.tags.json").write_text(
+        json.dumps({"mission": "smoke reference tape", "register": "neutral"}),
+        encoding="utf-8")
+    cars = st.load_recent_sidecars()
+    check("string-mission sidecar never enters the rotation",
+          all(isinstance(c.get("mission"), int) for c in cars))
+    check("integer-mission sidecar survives the filter",
+          any(c.get("mission") == 3 for c in cars))
+
+    argv, out = sys.argv, io.StringIO()
+    try:
+        sys.argv = ["suggest_targets.py"]
+        with contextlib.redirect_stdout(out):
+            st.main()
+        ran = True
+    except Exception as e:  # noqa: BLE001 — the check IS "it doesn't raise"
+        ran, out = False, io.StringIO(f"raised {e!r}")
+    finally:
+        sys.argv = argv
+    text = out.getvalue()
+    check("ticket runs end-to-end on day-zero state", ran, text[:200])
+    check("ticket prints the menu header", "SESSION TICKET" in text)
+    check("day-zero ticket still serves new candidates",
+          "not found" not in text, text[:200])
+
+
 def main():
     with tempfile.TemporaryDirectory(prefix="tutor-smoke-") as tmp:
         sb = make_sandbox(Path(tmp))
@@ -758,6 +1095,7 @@ def main():
         mk, kr, pq = load_modules(sb)
         s1_parse_llm_json(mk)
         s2_rails_gate(mk, sb / "progress" / "knock_log.json")
+        s15_push_retry(mk)   # needs the real push_to_phone — s3+ stub it out
         s3_knock_paths(mk, sb)
         s4_normalize(kr)
         s5_reply_judge(mk, kr, sb)
@@ -769,6 +1107,14 @@ def main():
         s11_capped_graduation(kr, sb)
         s12_volley(mk, kr, sb)
         s13_eavesdrop(mk, kr, sb)
+        s14_reply_correlation(kr)
+        s16_stale_clone_gates(sb)
+        s17_campaign_digest(mk, sb)
+        s18_prose_budgets(mk, kr, sb)
+        s20_fielding(mk, kr, sb)
+        s21_volley_represent(kr, sb)
+        s22_sfx_pause(sb)
+        s23_ticket_end_to_end(sb)
 
     print(f"\n{'ALL GREEN' if not FAILURES else 'FAILURES: ' + ', '.join(FAILURES)}")
     sys.exit(1 if FAILURES else 0)
