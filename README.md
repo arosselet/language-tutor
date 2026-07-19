@@ -37,7 +37,7 @@ is exactly the kind of thing the tutor derives for your language and teaches.
 [tamil-tutor](https://github.com/arosselet/tamil-tutor), a real system in daily
 use for months. `docs/WORKED_EXAMPLE.md` distills how each template elaborated
 there; `docs/DECISIONS.md` seeds the lessons it learned the hard way. This
-snapshot elaborates tamil-tutor at tag `template-v2-source`; the reference
+snapshot elaborates tamil-tutor at tag `template-v4-source`; the reference
 implementation moves ahead of it, and the template re-syncs by wholesale
 re-extraction at stable milestones — not per-fix backports.
 
@@ -89,9 +89,10 @@ Every mode reads and writes the same `progress/` state, so a word strained in
 chat is what the next podcast soaks, and a word soaked in audio is what the
 next chat forces cold:
 
-- **The daily session** (~10–15 min chat) — one living scene, cold fires as
-  moves inside it; opens on the running story, never "what do you want to do
-  today?"
+- **The daily session** (~5–15 min chat) — opens by *giving* (the running
+  story, a payoff, a tape — never "what do you want to do today?"), then the
+  day's shape carries honest cold volume: fires are moves inside a scene, and
+  on a fried day the espresso floor (payoff, three fires, out) still counts.
 - **The studio** — a three-role production crew (Director → Architect →
   Producer) the tutor commissions end-to-end: dual-voice podcast episodes in
   native TTS voices, published to an RSS feed your podcast app subscribes to.
@@ -100,7 +101,9 @@ next chat forces cold:
 - **The knock loop** — the tutor decides, inside hard anti-pester rails,
   whether/when/how to reach your phone: a text micro-dose, a 60–90s audio memo
   in its one pinned voice, a challenge, a multi-item volley blitz, an
-  overheard eavesdrop tape (ear-training), or grace. Type a reply straight
+  overheard eavesdrop tape (ear-training), a fielding dose (a question fired
+  AT you in a second voice — parsing it is half the rep, and a repair line
+  back is a pass), or grace. Type a reply straight
   into the notification and a judge grades it — text the knock *showed* you
   caps at "hinted"; only unaided production fires cold (with a graduation
   lane so daily-knocked words can still escape the cap across days).
@@ -127,7 +130,7 @@ next chat forces cold:
 ```
 SETUP.md              → The agent-led bootstrap protocol (start here)
 config/               → tutor.json — the one config surface (synthesized at setup)
-protocol/             → The pedagogy: constitution, daily session, session tools, diagnosis
+protocol/             → The pedagogy: constitution, daily session, diagnosis
                         + synthesized: persona, language charter, studio cast & dialect
 protocol/studio/      → The production crew: director, architect, producer
 curriculum/           → word_pool.json (seed glue words) + optional sprint decks
