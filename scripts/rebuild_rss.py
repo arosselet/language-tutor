@@ -85,7 +85,7 @@ def clean_title(raw_title: str, filename: str) -> str:
 
     # Try to extract tier, mission, and subtitle from the raw title
     match = re.match(
-        r"Tier\s+(\d+),?\s+Mission\s+(\d+)[:—-]\s*(.+)", raw_title, re.IGNORECASE
+        r"Tier\s+(\d+),?\s+Mission\s+(\d+)\s*[:—-]\s*(.+)", raw_title, re.IGNORECASE
     )
     if match:
         mission = match.group(2)
@@ -183,7 +183,13 @@ def generate_rss():
 
     for filename in episodes:
         audio_path = os.path.join(AUDIO_DIR, filename)
-        script_path = os.path.join(SCRIPTS_DIR, filename.replace('.mp3', '.md'))
+        # A re-rendered episode bumps its filename (_v2, _v3 …) so the feed guid
+        # changes and podcast apps can't serve stale cached audio; the script
+        # keeps the base name, so resolve the suffix away for title/captions.
+        base_name = re.sub(r"_v\d+\.mp3$", ".md", filename)
+        if not base_name.endswith(".md"):
+            base_name = filename.replace('.mp3', '.md')
+        script_path = os.path.join(SCRIPTS_DIR, base_name)
 
         raw_title = get_title_from_md(script_path) or filename
         if filename.startswith("knocks/"):

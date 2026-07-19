@@ -159,8 +159,24 @@ def compute_deck(lexicon: dict, deck: str = DECK_NAME) -> dict:
     caught = [w for w in catch if members[w].get("recognition") == "solid"]
     total = len(fire)
     pct = (len(cleared) / total * 100) if total else 0.0
+    # Tier-0 headline (from the reference impl, 2026-07-18): the narrated meter
+    # counts the highest-priority tier — the one that decides freezing in a live
+    # exchange — not the whole inventory; a need-per-day computed on everything
+    # read as failure inside a winnable sprint. Tiers stay a menu concern owned
+    # by config (deck.tiers) — joined lazily so the lexicon schema stays frozen;
+    # no tiers configured → the headline degrades to the whole fire side.
+    try:
+        from config import DECK_TIERS
+        from suggest_targets import deck_registers
+        regs = deck_registers(deck)
+        surv = ([w for w in fire if DECK_TIERS.get(regs.get(w, ""), 1) == 0]
+                if regs and DECK_TIERS else fire)
+    except Exception:
+        surv = fire
     return {"cleared": len(cleared), "total": total, "pct": pct,
-            "caught": len(caught), "catch_total": len(catch)}
+            "caught": len(caught), "catch_total": len(catch),
+            "surv_cleared": sum(1 for w in surv if members[w].get("production") == "cold"),
+            "surv_total": len(surv)}
 
 
 # --- Episode helpers (progress/episodes.json — a flat {id: episode} map) ------
@@ -172,12 +188,15 @@ def compute_status() -> str:
     lexicon = load_json(LEXICON_PATH) or {}
     deck = compute_deck(lexicon)
     if deck["total"]:
-        head = f"{DECK_LABEL} {deck['cleared']}/{deck['total']} fire cold"
+        tiered = deck["surv_total"] != deck["total"]
+        head = (f"{DECK_LABEL} {deck['surv_cleared']}/{deck['surv_total']} tier-0 cold"
+                if tiered else f"{DECK_LABEL} {deck['cleared']}/{deck['total']} fire cold")
+        tail = f" · full deck {deck['cleared']}/{deck['total']}" if tiered else ""
         deadline = deck_deadline()
         if deadline:
             days = (deadline - date.today()).days
             return (f"{head} · {days} days to {DECK_DEADLINE_LABEL} · "
-                    f"{burn_rate(deck, days)}")
+                    f"{burn_rate(deck['surv_total'] - deck['surv_cleared'], days)}{tail}")
         return head
     floor = compute_floor(lexicon)
     return f"Viability floor {floor['cleared']}/{floor['total']} fire cold ({floor['pct']:.0f}%)"
@@ -204,11 +223,11 @@ def cold_fires_recent(days: int = 7) -> int:
     return n
 
 
-def burn_rate(deck: dict, days_left: int, window: int = 7) -> str:
-    """The honest pace line: cold/day needed to clear the deck's fire side by the
-    deadline vs. the trailing cold/day actually happening. Python states the math;
-    the tutor narrates what it means."""
-    pending = deck["total"] - deck["cleared"]
+def burn_rate(pending: int, days_left: int, window: int = 7) -> str:
+    """The honest pace line: cold/day needed to clear the given pending count by
+    the deadline vs. the trailing cold/day actually happening (tier-0 count since
+    the survival-headline change). Python states the math; the tutor narrates
+    what it means."""
     need = pending / max(days_left, 1)
     pace = cold_fires_recent(window) / window
     return f"need {need:.1f} cold/day, trailing {window}-day pace {pace:.1f}/day"

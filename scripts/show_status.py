@@ -65,9 +65,14 @@ def main():
             countdown = f" · {days} days to {DECK_DEADLINE_LABEL}"
         print(f"\n★ {DECK_LABEL.upper()} — the sprint headline{countdown}")
         print("-" * 55)
-        print(f"    [{bar(deck['pct'])}] {deck['cleared']}/{deck['total']} fire cold ({deck['pct']:.0f}%)")
+        if deck["surv_total"] != deck["total"]:
+            surv_pct = deck["surv_cleared"] / deck["surv_total"] * 100 if deck["surv_total"] else 0.0
+            print(f"    [{bar(surv_pct)}] {deck['surv_cleared']}/{deck['surv_total']} tier-0 cold ({surv_pct:.0f}%)")
+            print(f"    Full deck: {deck['cleared']}/{deck['total']} fire cold")
+        else:
+            print(f"    [{bar(deck['pct'])}] {deck['cleared']}/{deck['total']} fire cold ({deck['pct']:.0f}%)")
         if deadline:
-            print(f"    Burn rate: {burn_rate(deck, (deadline - date.today()).days)}")
+            print(f"    Burn rate: {burn_rate(deck['surv_total'] - deck['surv_cleared'], (deadline - date.today()).days)}")
         if deck["catch_total"]:
             print(f"    Ear-only (catch): {deck['caught']}/{deck['catch_total']} solid")
 

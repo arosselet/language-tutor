@@ -224,7 +224,10 @@ def load_recent_sidecars(limit: int | None = None) -> list[dict]:
             d = json.loads(p.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError):
             continue
-        if "mission" in d:
+        if isinstance(d.get("mission"), int):
+            # Only integer missions count: a reference tape carrying a string
+            # mission belongs to the feed, never the scene rotation (and a
+            # str/int sort crash took the whole ticket down in the reference impl).
             cars.append(d)
     cars.sort(key=lambda d: d.get("mission", 0), reverse=True)
     return cars[:limit] if limit else cars
