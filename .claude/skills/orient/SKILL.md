@@ -68,7 +68,7 @@ For the Python brain: read the script you intend to change, plus `scripts/smoke_
 
 **Glossary** — every project-jargon term a newcomer will hit (viability floor, soak-order, engines, the stake, Intercept, Breakdown, scene spec, capped, volley, etc.) with a 1–2 line definition and the file where each is defined: `references/glossary.md`.
 
-**Sibling skills** (procedures, not orientation):
+**Sibling skills** (procedures, not orientation — `/recalibrate` for pedagogy felt-signals):
 
 | Task | Skill |
 |---|---|

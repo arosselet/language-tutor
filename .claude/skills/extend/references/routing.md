@@ -14,6 +14,7 @@ If a file is missing, stop and report — do not create a substitute.
 | Session law (invariants, shapes, campaign contract, close mechanics) | `protocol/daily_session.md` | Minimum-law: the shapes and one-line moves live here; there is no separate formats file |
 | Pedagogical law and canonical rules (Fresh Execution, Contrast Beat) | `protocol/constitution.md` | Universal law — language-specific examples belong in `language.md` |
 | All state writes to `progress/*.json` | `scripts/sync_state.py` | Never hand-edit Python-owned JSON directly |
+| Pedagogy feels wrong (chore/drill/samey) | `/recalibrate` | Felt signal → ledger → evidence → at most one move |
 | Language/learner/deployment constants (script regex, voices, repo URL, rails, volley size) | `config/tutor.json` via `scripts/config.py` | Port surface — see `/extend` Gate 6 |
 | Outreach rails (waking hours, daily cap, min gap) | `config/tutor.json` → `outreach.*` | Read by `morning_knock.py` |
 | Outreach decision prompt (the tutor's fire/silence policy prose) | `scripts/morning_knock.py` → `OUTREACH_MANDATE` | Policy is the tutor's; Python holds only the rails |

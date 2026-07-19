@@ -43,12 +43,24 @@ writing code").
 approved the tradeoff, or said "do it." Silence, a question, or non-objection is NOT
 alignment. Until then: state the real situation sharply; write no code.
 
+**Exploring includes the plumbing.** Read the owning file and the relevant log *before*
+proposing any mechanism — never hand the owner a choice between mechanisms the evidence
+hasn't earned. A mechanism proposed before diagnosis is a symptom cap, and the better
+half of the real fix is often a deletion only reading the file can find.
+
 ---
 
 ## Gate 4 — What does this replace?
 
 Every addition must earn its place. Before writing any code, state out loud:
 *"This replaces / simplifies ___."* (`docs/DECISIONS.md` → "Every addition must earn its place.")
+
+**The word budget.** The protocol's prose surfaces — `persona.md.template`,
+`constitution.md`, `daily_session.md`, the outreach/judge mandates — carry word budgets
+asserted by `scripts/smoke_test.py` → `PROSE_BUDGETS`; growth past budget is a red run.
+Raising a budget is allowed only in the same diff as the growth, and the commit must
+name the lines it retired. A file that keeps hitting its ceiling is carrying crud or
+doing too many jobs — a split-or-retire signal, never a bump-the-number reflex.
 
 If you cannot name what it replaces, that is the signal to stop.
 
@@ -118,3 +130,4 @@ Run these after every non-trivial change to the machinery:
 - `/debug` — symptom → evidence triage; per-subsystem failure playbooks
 - `/validate` — routine health checks; safe/mutating command inventory
 - `/verify` — proving a change works end-to-end
+- `/recalibrate` — pedagogy felt-signals; felt signal → evidence → one move

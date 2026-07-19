@@ -127,4 +127,26 @@ against computed evidence in both directions.
 
 ---
 
+### KF-9: One-knock-at-a-time notifications ate stacked doses
+**Symptom:** a knock logs "no-tap" though the learner swears they saw nothing — a later
+push replaced it on the lock screen.
+**Root cause:** a fixed notification tag made every push self-replacing; replies could
+only correlate to the last-fired knock.
+**Fix:** every push carries its log timestamp as `knock_id` (round-tripped by the
+notification's action data); `find_knock()` targets that entry, last-fired only as
+fallback. Notifications stack. **Verify:** smoke → section 14.
+
+### KF-10: Volley surface desynced from the pin — the judge improvised the chain
+**Symptom:** mid-volley, a chat reply made the open ask vanish; the judge re-asked an
+earlier item, declared the volley finished, or claimed a score its verdict never produced.
+**Root cause (code, not judge discipline):** `judge()` received the notification body
+frozen at ask 1 while Python's pin walked the queue — from item 2 on, every volley read
+as a KF-3 mis-target and the coherence safety net *lawfully voided the pin*.
+**Fix:** `volley_open_ask()` is the single owner of the current ask — the judge grades
+against it, chat verdicts re-present it, the last judged item sets `volley_done`. The
+meta-lesson: the LLM must never own chain *surface* any more than chain *state* —
+whatever Python tracks, Python must also say. **Verify:** smoke → section 21.
+
+---
+
 **Scope:** This skill owns triage only. Routine health checks → `/validate`. Making the fix → `/extend`. Proving it → `/verify`.
