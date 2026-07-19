@@ -28,6 +28,10 @@ The shorthand test after your pass lives at the top of `dialect.md` (e.g. *"woul
 
 ## Pacing Check
 
+In a `narrated_drama`, the dialect pass transforms *dialogue* only; narration lines
+take the integrity checks — embedded target language in the canonical TTS form, no
+stray markdown, pacing.
+
 After the dialect pass, enforce the Architect's Listenability Gate (`protocol/studio/architect.md` → Pacing — the thresholds live there, once): overlong lines, pause starvation, wall-of-text runs. These are **send-back issues**, not cosmetic.
 
 ---
@@ -62,7 +66,7 @@ After the dialect and integrity passes, write a sidecar metadata file alongside 
 }
 ```
 
-**`register`, `dramatic_ingredient`, and `episode_form` are load-bearing — `scripts/suggest_targets.py` reads them to compute the next episode's Scene Spec (the divergence gate).** Write what was *actually delivered*, the same as `shape`. Use the canonical values: register from the Director's palette, ingredient from `subtext | turn | character | stakes | genre`, form from `classic | vignette | story | phone_call | lore`. Omitting them doesn't crash the gate, but it blinds it on that axis.
+**`register`, `dramatic_ingredient`, and `episode_form` are load-bearing — `scripts/suggest_targets.py` reads them to compute the next episode's Scene Spec (the divergence gate).** Write what was *actually delivered*, the same as `shape`. Use the canonical values: register from the Director's palette, ingredient from `subtext | turn | character | stakes | genre`, form from `classic | vignette | story | phone_call | lore | narrated_drama`. Omitting them doesn't crash the gate, but it blinds it on that axis.
 
 **Estimating density:** Eyeball it. Count target-language chunks vs native-language chunks per line, average across the section. Round to nearest 0.05. This is a *descriptive* stat for the tags sidecar, not a target — the Architect builds from the vocabulary fence and the density is whatever results.
 

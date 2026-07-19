@@ -11,8 +11,7 @@ If a file is missing, stop and report — do not create a substitute.
 | Podcast cast names and regional voice identity | `protocol/studio/hosts.md` | Script-only rules live here (fourth wall, no ad-libs) |
 | Word selection ticket (floor-gap targets, engines, new candidates) | `scripts/suggest_targets.py` | |
 | Scene-spec divergence gate (register / form / dramatic ingredient) | `scripts/suggest_targets.py` | `scene_spec()`; the REGISTERS/FORMS/INGREDIENTS palettes are safe to re-flavor |
-| Session choreography (the ~10–15 min forced-output loop) | `protocol/daily_session.md` | |
-| The tutor's live formats (drill, roleplay, recall, reading, zinger) | `protocol/session_tools.md` | |
+| Session law (invariants, shapes, campaign contract, close mechanics) | `protocol/daily_session.md` | Minimum-law: the shapes and one-line moves live here; there is no separate formats file |
 | Pedagogical law and canonical rules (Fresh Execution, Contrast Beat) | `protocol/constitution.md` | Universal law — language-specific examples belong in `language.md` |
 | All state writes to `progress/*.json` | `scripts/sync_state.py` | Never hand-edit Python-owned JSON directly |
 | Language/learner/deployment constants (script regex, voices, repo URL, rails, volley size) | `config/tutor.json` via `scripts/config.py` | Port surface — see `/extend` Gate 6 |

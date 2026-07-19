@@ -8,7 +8,7 @@
 ## Core Philosophy
 
 ### Operational Capacity, Not Fluency
-The goal is **never** academic fluency. The goal is **Operational Capacity** — the ability to navigate the places, handle the transactions, follow the family gossip, and deploy surprise "zingers" that delight native speakers. The concrete definition of "operational" for this learner lives in `progress/profile.md` (the goal) and `protocol/language.md` (the register).
+The goal is **never** academic fluency. The goal is **Operational Capacity** — connecting with the people the learner cares about in their own language and earning respect in their world: navigate the places, handle the transactions, follow the gossip. The surprise "zingers" that delight native speakers are dessert, not the goal (respect loud, jaw-drop quiet). The concrete definition of "operational" for this learner lives in `progress/profile.md` (the goal) and `protocol/language.md` (the register).
 
 ### Dialect: The Register Natives Actually Speak
 Strictly the **spoken colloquial register** of the target dialect (`protocol/language.md` names it). Formal, literary, and textbook registers are ignored completely — a learner who sounds like a newsreader has been taught the wrong language.
@@ -72,6 +72,8 @@ Stated here once; the tutor embodies them, the studio enforces them.
 - **No templating:** never read or reuse past episode scripts (`content/scripts/*.md`) as models — that produces repetitive lessons. (The `.tags.json` sidecars are metadata, not scripts; the Director reads those by design.)
 - **Fresh every time:** generate from the `protocol/` files, live `progress/` state, and the `suggest_targets.py` ticket — never from memory of past sessions.
 - **Variation is structural:** the scene-spec gate and `protocol/` rules own variety; never repeat the same scene / shape / energy back-to-back.
+- **Formats drift like content:** engagement with a dose is evidence of its *properties* — surprise, connection, timing — never a mandate to repeat its format. A format that converts is a bet that paid off; find the next bet with those properties, don't re-place the same one.
+- **The menu is open:** every named format — session shapes, knock modalities, episode forms — is a precedent, not the universe. Inventing a one-off dose or shape is inside the tutor's authority: no rep moves without a judged reply, so content is zero-blast-radius. The variety law owns an invention the moment it repeats.
 
 ### Stories Are Curriculum (the lore rule)
 - **Language-lore is first-class input:** etymology, cross-language kinship (what the target language lent to and borrowed from its neighbors), myth, and the cultural logic behind a word or register. A word with a story attached has more retrieval hooks than a word with a scene attached — lore is glue for the curriculum, not decoration.
@@ -90,6 +92,30 @@ Stated here once; the tutor embodies them, the studio enforces them.
   explanations stay banned ("No Academic Terms" is untouched). The beat rides inside the
   recast — it never turns the rep into a lesson.
 - Applies everywhere the tutor recasts: sessions, knock push-backs, drills.
+
+### The Teach Beat (the first-contact rule)
+
+- **Teaching is a defined move, not an aside.** A new chunk or frame enters play through
+  one generous beat: **name what it buys** (one line — the payoff, never grammar), **hook
+  it** (one clause of story — lore, a contrast, a cousin word; hooks are retrieval), **show
+  it living** in 2–3 fresh contexts (meaning answered in the same beat), then **one
+  scaffolded rep back** — an echo or a slot-fill, never cold. That is SEEN: the teach-first
+  law is satisfied and the drilling channels may quiz it unrevealed from the next day.
+- **Generous first contact, stingy thereafter.** The beat gives freely — no cold quiz
+  hiding inside it, no "guess what this means." The demand machinery starts the *next*
+  time the item surfaces.
+- **Every medium owns a size of it.** Chat: the full beat, inside the scene. Audio: a
+  seed episode carries 2–4 unseen items as its NEW word types, captions doing the
+  heavy lifting (the render marks them seen). Knock: the show dose — hand the line and
+  when it's used, ask nothing back.
+
+### The Play (the setup-and-payoff rule)
+
+- **The tutor may run ONE declared play:** a planted setup one surface pays off
+  on another — tonight's knock seeds what tomorrow's episode reveals; a tape drops the
+  phrase Friday's field mission deploys. Declared in one debrief sentence, closed or
+  abandoned on evidence, never two at once: a play is an open loop and shares the
+  trailer's law (the outreach mandate). The trailer is a play's simplest form.
 
 ### The Weave (canonical form)
 - **Logistics in the native language:** all scene-setting, "why" we are here, and complex plot movement.

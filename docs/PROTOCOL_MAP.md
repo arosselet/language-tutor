@@ -18,8 +18,7 @@ protocol/
 ├── persona.md          The tutor — the one persistent voice        [synthesized at setup]
 ├── language.md         The language charter (weave, modality split) [synthesized at setup]
 ├── constitution.md     Universal law: philosophy, tactical & canonical rules
-├── daily_session.md    The ~10–15 min forced-output loop (the choreography)
-├── session_tools.md    The tutor's live formats (drill, roleplay, recall, reading, zinger)
+├── daily_session.md    The ~5–15 min forced-output loop (invariants + shapes + campaign)
 ├── diagnosis.md        How feedback becomes change (dial > prune > propose)
 └── studio/             The backstage production crew — runs in an isolated context
     ├── studio.md       Orchestrator + the soak-order contract (the front door)
@@ -39,11 +38,18 @@ The tutor writes it at Close & Log; the studio consumes it. It is the *only*
 thing that crosses between the two halves (`progress/learner.json` →
 `soak_order`):
 
-- `payload` — the words chat just strained
+- `payload` — the words chat just strained — or, when a campaign is live, a
+  **seed order**: 2–4 unseen deck items the episode teaches first (captions carry
+  the load; the render's `seen_in` stamp is what opens them to the drilling channels)
 - `scene_seed` — one line of the running story
 
 The tutor hands **meaning**; the studio derives the rest (register / form /
 ingredient, callbacks, density) and owns the **craft**.
+
+A second, softer interface: the **campaign block** (`progress/profile.md` → "The
+Campaign — This Week") — a learner-initiated one-week unit plan in the tutor's
+prose. Sessions, the studio, and the knock digest all read it; only a live
+session writes it.
 
 ## Invocation shells (thin, per-agent — all substance lives in `protocol/`)
 

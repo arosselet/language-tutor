@@ -36,8 +36,7 @@ profile.md says the number.
 | `constitution.md` | universal law (weave principle, no-academic-terms, lore rule, invisible assessment) | almost never — it's the settled pedagogy |
 | `language.md` | *your language's* letter of the weave + modality split, register, lore veins | the informant corrects a derivation; your register goal shifts |
 | `persona.md` | who the tutor is, the stake, voice lines, masks, never-does | the persona drifts or the stake changes (new trip, post-reveal) — edit surgically, keep the fixed sections |
-| `daily_session.md` | the session choreography + close/log contract | rarely; it encodes the loop that works |
-| `session_tools.md` | the five in-session formats | add/prune a format the tutor actually uses/never uses |
+| `daily_session.md` | session law: invariants, shapes, campaign contract, close/log | rarely; it encodes the loop that works — shapes and one-line moves live here |
 | `diagnosis.md` | how feedback becomes change (dial > prune > propose) | almost never |
 | `studio/hosts.md` | the cast | recast names/personalities |
 | `studio/dialect.md` | written→spoken transformation rules | **most-edited file in the pack** — sharpen every time the informant flags textbook-ese |

@@ -16,6 +16,15 @@ Read `progress/learner.json` → `soak_order`:
 - **`payload`** — the words/phrases to soak this episode (what the tutor just strained in chat).
 - **`scene_seed`** — one line situating the next beat of the running story.
 
+**A soak-order may also point *forward* — the seed order.** When a campaign is live
+(`progress/profile.md` → "The Campaign — This Week"), the tutor may hand a payload of
+2–4 **unseen** deck items from its next chapter instead of chat's last strain. This
+episode *teaches*: the payload items are its NEW word types (the Calibration Notes'
+NEW-word rules apply) and the caption sheet is the primary companion — write it with
+extra care. The render stamps `seen_in` as always, which is what legally opens these
+items to the volley and knock channels the next day. Nothing else about the pipeline
+changes.
+
 If `soak_order` is empty, build from `python scripts/suggest_targets.py` alone (no chat hand-off this round). But **prefer the soak-order when set** — that is what makes the episode the other half of the loop: it soaks exactly what chat just strained.
 
 Everything else — register, form, dramatic ingredient, callbacks, density — **you derive** (the Director pass owns this). The tutor hands *meaning*; you own *craft*.

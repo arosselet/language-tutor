@@ -40,6 +40,14 @@ The Master Lesson Plan carries the core pedagogical targets. Delivery modalities
 **Energy:** `low | medium | medium-loud | loud`. Contrast against the last 2-3. (Energy is loud/quiet; **Register** from the Scene Spec is the *emotional tone* — they're independent.)
 
 **Episode Form (from the Scene Spec):** The *structure* of the episode (orthogonal to Shape, which is *what happens*). The Architect executes whichever the spec handed you.
+
+**`narrated_drama` — commissioned, never spec-rotated.** The tutor commissions it through
+the soak order (`"form": "narrated_drama"`, `"scale": "long"`) when the week is ready for
+a batch soak; the spec's form is overridden for that episode only. It is the **batch-soak
+channel**: ~15–25 payload items instead of ~5, allocated in tiers — Teach-First (unseen,
+glossed in context) / Cold-Fire Engines (one novel instance each) / Ear-Only catch
+(natural speed, unglossed) / New Cluster / Callbacks & floor-gaps. Buy items with
+minutes, not density. Structure and narrator craft: `architect.md` → The Episode Form.
 `classic` (Intercept + full Breakdown) | `vignette` (Intercept only, no Breakdown — trust the scene) | `story` (one host carries a short told tale; light or no Breakdown) | `phone_call` (naturalistic call; light Breakdown) | `lore` (the analysts lead end-to-end; the payload word is the protagonist — history, kinship, myth, culture; 1–2 words told deep)
 
 ---

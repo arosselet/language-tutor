@@ -44,6 +44,16 @@ What every episode needs, regardless of shape:
 
 The Lesson Plan also specifies an **Episode Form** — the *structure* you deliver. Don't default every episode to the analyst deep-dive; that sameness is what makes a feed feel flat.
 
+**`narrated_drama`** (commissioned via the soak order, never by the Scene Spec): a
+multi-scene story with real stakes, ~12–18 min. A single **Narrator** carries the
+scaffolding in the native language — second person, present tense ("you squint at the
+screen"), addressing the *protagonist* (cast rules in `hosts.md`) — while characters
+live entirely in the target language. Narrator craft: the target-language beat lands
+first, the gloss follows it — never before — and the line gets a second of air before
+the gloss closes the gap. The Narrator's embedded target language is the canonical TTS
+form, always (`protocol/language.md`). Buy payload with minutes, not density — the
+fence rule holds inside every scene.
+
 - **`classic`** — Intercept + full Breakdown. The default, but not the only option.
 - **`vignette`** — Intercept only. **No Breakdown.** A short, punchy slice-of-life that trusts the scene to carry the words. Best when the payload leans on consolidation/callbacks rather than heavy new vocab.
 - **`story`** — one host carries a short told tale (a thing that happened to a cousin, a ride gone wrong). Light Breakdown or none. The other host can interject, but one voice leads.
