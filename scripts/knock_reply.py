@@ -151,6 +151,17 @@ the current line only. Do NOT write follow_up_ask (Python appends the next volle
 to your recast itself); keep reply_line to ONE short clause so the appended ask still \
 fits the lock screen.
 
+VOLLEY discipline: grade ONLY against the current pinned item. On a miss, your recast \
+reveals THAT item's answer — never a previous exchange's (prior_exchanges are context, \
+not the subject). Never re-ask an earlier item, never declare the volley finished, and \
+never claim a score your returned verdict doesn't produce — Python owns the chain and \
+re-presents the open ask itself.
+
+FIELDING dose (modality "fielding"): the heard memo_script was a question fired AT the \
+learner; grade the reply as its ANSWER — parsing the question is half the rep. A repair \
+line back ("I didn't catch that", "slower, please" — in the target language) is a \
+legitimate creditable fire: grade THAT production, never a miss.
+
 SCHEDULING (optional): you may also plant ONE future push at a precise local time via \
 "schedule" — a fully-composed dose that fires as-is later (collect tonight's field \
 mission tomorrow morning; resurface today's wobble at 19:00). Use the exchange itself \
@@ -362,16 +373,32 @@ def hours_since_exchange(knock: dict, now: datetime) -> float | None:
     return (now - dt).total_seconds() / 3600
 
 
+
+def volley_open_ask(knock: dict) -> str | None:
+    """The CURRENT volley ask as 'N/M — <ask>', or None outside a volley.
+    Python owns this string everywhere it surfaces (judge context, chat
+    re-presents). The root cause it guards (reference impl KF-11): the logged
+    body stays frozen at ask 1 while the pin walks, so handing the raw body to
+    the judge made every later item read as a mis-target — and the coherence
+    safety net then LAWFULLY voided the pin and recast item 1's answer."""
+    vq = knock.get("volley")
+    if not vq:
+        return None
+    cur = min(knock.get("volley_next", 1), len(vq))
+    return f"{cur}/{len(vq)} — {vq[cur - 1]['ask']}"
+
+
 def judge(knock: dict, reply_text: str, target_record: dict | None,
           hours_since: float | None = None,
           revealed_recent: list | None = None) -> dict:
     persona = (BASE / "protocol" / "persona.md").read_text(encoding="utf-8")
     pin, pin_revealed = current_pin(knock)
+    open_ask = volley_open_ask(knock)
     context = {
         "knock": {
             "modality": knock.get("modality"),
             "move": knock.get("move"),
-            "notification_body": knock.get("body", ""),
+            "notification_body": f"volley {open_ask}" if open_ask else knock.get("body", ""),
             "memo_script": knock.get("memo_script", ""),
             "expected_target": pin,
             "target_revealed": pin_revealed,
@@ -632,12 +659,20 @@ def main():
     # judge's own follow_up is ignored — finite by construction, no CHAIN_CAP.
     follow, volley_pin = "", None
     vq = knock.get("volley")
+    represent = None  # KF-11: deterministic re-present of the still-open ask
     if vq:
         if verdict["verdict"] != "chat":
             nxt = knock.get("volley_next", 1)
             if nxt < len(vq):
                 volley_pin = vq[nxt]
                 follow = f"{nxt + 1}/{len(vq)} — {volley_pin['ask']}"
+            else:
+                knock["volley_done"] = True  # last item judged — chain closed
+        elif not knock.get("volley_done"):
+            # A chat/meta reply mid-volley must never let the open ask vanish
+            # from the surface. Python owns the chain; Python re-presents it
+            # (same owner as the judge's context: volley_open_ask).
+            represent = f"still open · {volley_open_ask(knock)}"
     elif (verdict["verdict"] in ("cold", "hinted") and verdict["follow_up_ask"]
             and knock.get("chained", 0) < CHAIN_CAP):
         follow = verdict["follow_up_ask"]
@@ -667,7 +702,7 @@ def main():
     knock["reply_fired_capped"] = knock.get("reply_fired_capped", []) + capped_keys
     # store the FULL push-back (recast + chained ask): the next judge call reads it
     # as a prior exchange, and shown_in_knock scans it for revealed target text
-    knock["reply_line"] = " · ".join(p for p in (verdict["reply_line"], follow) if p)
+    knock["reply_line"] = " · ".join(p for p in (verdict["reply_line"], follow or represent) if p)
     knock["reply_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     knock.setdefault("exchanges", []).append({
         "at": knock["reply_at"], "reply": reply_text,

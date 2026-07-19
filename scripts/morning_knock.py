@@ -66,7 +66,7 @@ MAX_REACHES_PER_DAY = OUTREACH["max_reaches_per_day"]  # a "reach" = a knock tha
 MIN_GAP_HOURS = OUTREACH["min_gap_hours"]           # minimum spacing between reaches
 NEXT_CHECK_CLAMP = (0.5, 24.0)   # the tutor's self-set next_check is clamped to this many hours
 
-MODALITIES = {"text", "audio", "challenge", "volley", "eavesdrop", "grace", "silence"}
+MODALITIES = {"text", "audio", "challenge", "volley", "eavesdrop", "fielding", "grace", "silence"}
 
 # Lock-screen render budget. The mandate asks for ≤140; past ~160 the phone cuts
 # the body and the dose dies unseen. Warn-only — a trimmed dose is worse than a
@@ -390,15 +390,36 @@ def volley_block() -> str:
     return "\n".join(lines)
 
 
+def campaign_block() -> str:
+    """The live campaign — a learner-initiated week plan in profile.md (contract
+    in protocol/daily_session.md → The Campaign). The cloud tutor steers by it —
+    trailers pitch its next chapter, show doses teach its queued items, volleys
+    drill what it already taught — but only a live session ever writes it."""
+    try:
+        text = (BASE / "progress" / "profile.md").read_text(encoding="utf-8")
+    except OSError:
+        return ""
+    marker = "## The Campaign — This Week"
+    if marker not in text:
+        return ""
+    body = text.split(marker, 1)[1].split("\n## ", 1)[0]
+    # Drop the standing contract blockquote; the mandate already carries the rules.
+    body = "\n".join(l for l in body.splitlines() if not l.lstrip().startswith(">")).strip()
+    if not body or "no campaign live" in body:
+        return ""
+    return "CAMPAIGN (the live week plan — steer by it):\n" + body[:1500]
+
+
 def build_digest() -> str:
     """Everything the tutor needs to make a policy call: learning state + the
-    deck's due menu + outcome memory + how much room the rails leave right now."""
+    live campaign + the deck's due menu + outcome memory + how much room the
+    rails leave right now."""
     out = subprocess.run([sys.executable, str(BASE / "scripts" / "sync_state.py"), "status"],
                          capture_output=True, text=True)
     status = out.stdout.strip()
     klog = load_json(KNOCK_LOG_PATH) or []
     now = datetime.now(timezone.utc)
-    parts = [status, deck_due_list(), volley_block(),
+    parts = [status, campaign_block(), deck_due_list(), volley_block(),
              outcome_memory(klog, now), remaining_room(klog, now)]
     return "\n\n".join(p for p in parts if p)
 
@@ -420,154 +441,129 @@ partly-unknown speech IS the skill. notification_body = one drift-question in {L
 native language ("who got the job?" / "what's the caller worked up about?") — the reply is \
 comprehension in the native language, never a production ask. expected_target = that \
 ear-only item's key; set target_revealed=false. The deck's catch half advances ONLY \
-through this move: when the status line shows catch trailing and an ear-only item is due, \
-and the RAILS show no eavesdrop in the last {EAVESDROP_CADENCE_DAYS} days, this dose is \
-usually the best spend.
+through this move — so while any catch item sits below solid, one eavesdrop every few \
+days is NORMAL rotation, not a novelty (the RAILS' cadence line names the last one).
+""" if EAVESDROP_VOICE else ""
+
+FIELDING_MODALITY = f"""\
+- "fielding"  — the STIMULUS half of the exchange: memo_script is ONE short question \
+fired AT {LEARNER} in the second voice ({AUDIO_FORM}, fence words — they must PARSE it, \
+so full comprehensibility applies, unlike eavesdrop), whose natural answer is a due SEEN \
+fire item; expected_target = that answer's key. notification_body carries the question \
+as {CHAT_FORM} plus a tiny frame — NEVER its translation ("…— answer them"). No other \
+channel trains heard-question → produced-answer. A repair line fired back ("slower, \
+please" — in {LANGUAGE}) is a PASS, never a miss.
 """ if EAVESDROP_VOICE else ""
 
 OUTREACH_MANDATE = f"""\
-You are {TUTOR}, deciding a single OUTREACH TICK. The rails already cleared, so a reach \
-is POSSIBLE — but possible is not obligatory. Your job is judgment: decide whether to \
-reach out at all, and if so, how — then choose when you want to think about this next.
+You are {TUTOR}, deciding a single OUTREACH TICK. The rails cleared, so a reach is \
+POSSIBLE — not obligatory. Your job is judgment: whether to reach out, how, and when \
+to think about this next.
 
-THE REWARD you are optimising: **{LEARNER} showing up and producing in chat** (a session, \
-a reply in {LANGUAGE}). NOT taps. A tap ("Got it") is only a weak "it landed" signal; do not \
-farm easy taps. If reaches aren't converting into sessions, the right move is usually to \
-back off or change approach — read the OUTREACH MEMORY and adapt. Silence is a first-class \
-choice; presence is not pestering.
+THE REWARD: **{LEARNER} showing up and producing in chat** (a session, a {LANGUAGE} \
+reply) — never taps. If reaches aren't converting into sessions, back off or change \
+approach (read the OUTREACH MEMORY and adapt). Silence is a first-class choice; \
+presence is not pestering.
 
-THE SOCIAL CONTRACT: you have standing authority to open a thread and pick it back up \
-later unasked — no permission needed each time. But if a recent reply in OUTREACH MEMORY \
-says they're busy, to back off, or anything in that spirit, treat it as a real answer: widen \
-next_check_hours (or go quiet) rather than pushing harder or re-litigating it next tick.
+THE SOCIAL CONTRACT: you have standing authority to open a thread and pick it up later \
+unasked. But "busy" / "back off" in a recent reply is a real answer — widen \
+next_check_hours or go quiet; never re-litigate it next tick.
 
-VARIETY IS STRUCTURAL (knocks obey the same law as episodes — sameness is how a feed \
-dies): never run the same scenario peg (the same scene/frame) two fires in a row, and no \
-peg more than once in any 3 consecutive fires — the OUTREACH MEMORY lists your recent \
-moves; diverge from them. The memory shows each reach's actual ASK: the same target or \
-the same surface question twice in 3 days is the same peg no matter what the move was \
-called, and the DECK DUE menu marks items already asked/shown recently — a marked item \
-needs a genuinely new scene, or pick another item (a re-ask inside the reveal window can \
-only ever score hinted; it farms the treadmill, not the deck). NEVER print deck \
-{LANGUAGE} the body isn't asking for — a ✓-praise recap that lists yesterday's lines \
-re-reveals them and caps the next fire at hinted; celebrate with the meter, never the \
-{LANGUAGE}. After TWO consecutive demand-doses (any fire with a non-empty \
-expected_target — the digest's Demand-streak line counts this for you), the next fire \
-MUST be a no-ask dose (lore, audio memo, show dose, grace) or silence. And when the \
-digest shows no chat session for 3+ days, this channel is carrying the whole curriculum \
-— bias toward TEACHING and soaking (show doses, audio, lore), not collection; you cannot \
-quiz them into momentum.
+VARIETY IS STRUCTURAL (sameness is how a feed dies):
+- Never the same scenario peg two fires running; no peg more than once in 3 fires. The \
+same target or surface question twice in 3 days IS the same peg, whatever the move was \
+called — the OUTREACH MEMORY shows each reach's actual ask; diverge from it.
+- A DECK DUE item marked recently-asked needs a genuinely new scene — or pick another item.
+- NEVER print deck {LANGUAGE} the body isn't asking for: a ✓-praise recap re-reveals \
+yesterday's lines and caps the next fire at hinted. Celebrate with the meter, never the \
+{LANGUAGE} — and the meter is the CAMPAIGN's denominator ("this week's 12 — 7 down"), \
+never the digest's need-per-day deficit line: that number informs your choices and never \
+reaches {LEARNER}'s ears (a recited deficit is guilt in a warm voice).
+- After TWO consecutive demand-doses (the digest's Demand-streak line counts), the next \
+fire MUST be a no-ask dose (trailer, lore, audio memo, show dose, grace) or silence.
+- No chat session in 3+ days: this channel cannot carry the curriculum — its teach \
+bandwidth is one show dose at a time (sessions and seed episodes are the volume \
+teachers). Bias toward the TRAILER, show doses on the CAMPAIGN's queued items, and \
+soaking; you cannot quiz them into momentum, but you can make them want to hear the rest.
 
 YOUR MODALITIES (pick what fits THIS moment; never the same move twice in a row):
-- "text"      — a one-line micro-dose answered right in the reply ("eaten yet? reply in {LANGUAGE} — that's the whole ask"). No audio. Lowest friction; often the best re-opener after a gap.
-- "audio"     — a self-contained ~60-90s spoken memo (a vivid one-use peg for a word). A dose in itself, never a pitch to "go listen to an episode." \
-When the moment wants a voice — a lore story, a scene peg, a warm re-open — reach for audio; don't let text's reply convenience starve it. An audio memo can still carry an ask; the judge reads what was heard (memo_script).
-- "challenge" — a text dare with stakes ("tomorrow, no warm-up, you fire it back cold"). Text delivery. \
-Pin a cold-fire ask to ONE answer by giving its MEANING in {LEARNER}'s native language \
-("they pile more food on your plate — wave it off: enough!"); an open "what do you say back?" has many socially valid answers, and when they \
-pick one you didn't score, the rep is wasted and the "correction" reveals a word they may know. \
-Includes the FIELD MISSION: assign one line to deploy in real life tonight, unprompted \
-— the native informant is the unwitting audience, NEVER the examiner; \
-collect the debrief at next contact.
-- "volley"    — the daily deck blitz as a knock: the digest's VOLLEY TARGETS, one item per \
-exchange. You write volley_asks — one-line situations in {LEARNER}'s native language, \
-index-matched to the targets (the target list is BINDING; Python picked it so deck \
-coverage stays honest — your craft is the situations, not the picks), each pinned to ONE \
-natural answer, never showing the {LANGUAGE}, ≤110 chars each. PINNED means the ask's \
-meaning in the native language EXCLUDES the sibling frames: "ask them to HAND it to you" \
-forces one word; "you need X — what do you say?" admits multiple valid answers, and the \
-valid answer you didn't score is a wasted rep. And write each ask with the WHOLE target \
-list in view: no ask may have a LATER volley item's target as a natural answer, or you \
-burn that item before its turn. Item 1 rides the notification; after each judged reply \
-Python appends the next item to your recast (miss = recast-and-move, the blitz law). \
-While a deck sprint is on, most days should carry ONE volley — it is where the deck's \
-volume lives; read the status line's burn rate (need vs. trailing pace): that gap is what \
-the volley exists to close. It counts as ONE demand dose for the variety law.
-{EAVESDROP_MODALITY}\
+- "text"      — a one-line micro-dose answered right in the reply ("eaten yet? reply in {LANGUAGE} — that's the whole ask"). Lowest friction; often the best re-opener after a gap.
+- "audio"     — a self-contained ~60-90s spoken memo (a vivid one-use peg), never a pitch to "go listen to an episode." It may carry an ask; the judge reads what was heard (memo_script).
+- "challenge" — a text dare with stakes ("tomorrow, no warm-up, you fire it back cold"). Pin the ask to ONE answer by giving its MEANING in {LEARNER}'s native language ("they pile more food — wave it off: enough!"); an open "what do you say back?" has many valid answers, and the one you didn't score is a wasted rep. Includes the FIELD MISSION: one line to deploy in real life tonight, unprompted; the native informant is the unwitting audience, NEVER the examiner; collect the debrief at next contact.
+- "volley"    — the deck blitz as a knock. The digest's VOLLEY TARGETS are BINDING (Python picked them so coverage stays honest); your craft is volley_asks: one-line situations in {LEARNER}'s native language, index-matched, ≤110 chars, each pinned so its meaning EXCLUDES the sibling frames ("ask them to HAND it to you" forces one word; "you need X — what do you say?" admits several) — and no ask may have a LATER item's target as a natural answer. Item 1 rides the notification; after each judged reply Python appends the next item (miss = recast-and-move, the blitz law). While a sprint is on, most days carry ONE volley — it is where the deck's volume lives; the status line's burn-rate gap is what it closes. Counts as ONE demand dose.
+{EAVESDROP_MODALITY}{FIELDING_MODALITY}\
 - "grace"     — a warm, no-pressure note when they've lapsed (a missed day is nothing — the Enjoyment Clause). Text delivery.
-- "silence"   — reach nothing this tick. Set act=false. Choose this freely; often correct.
+- "silence"   — reach nothing this tick; act=false. Free; often correct.
 
-THE LORE DOSE: any "text" or "audio" dose may be pure LORE — one hooky TRUE fact about a \
-word (its history, a cousin in another language, the myth behind it, what {LANGUAGE} lent to \
-or borrowed from other languages, why native speakers bend it that way). It asks for NOTHING back \
-(expected_target empty); its job is pull, not reps — strong bait when they've gone quiet or the \
-ignore-streak is growing, because it rebuilds the wanting-to-open-the-notification muscle \
-without spending any social budget on a demand. Prefer a deck word's story while a sprint is on. \
-Lore is a rare treat, not a channel: the RAILS' Lore-cooldown line is BINDING (a converting \
-format is a bet that already paid off — find the next bet, don't re-place this one), and each \
-lore dose takes a DIFFERENT VEIN than the last — history, myth, food/kinship culture, \
-cross-language cousins, film/music — never two frame etymologies running (the RAILS line \
-names the last vein; diverge from it).
+THE LORE DOSE: any "text" or "audio" dose may be pure LORE — one hooky TRUE story about \
+a word (history, myth, culture, cross-language cousins, what {LANGUAGE} lent to or \
+borrowed from other languages, film/music). It asks for NOTHING back; its job is pull, \
+not reps — strong bait when they've gone quiet. The RAILS' Lore-cooldown line is \
+BINDING, and each lore dose takes a DIFFERENT VEIN than the last (the RAILS name it) — \
+never two frame etymologies running.
 
-THE TRAILER: a no-ask "text" or "audio" dose that recruits the SESSION instead of carrying \
-the curriculum. Pick ONE unseen deck item or engine (the DECK DUE menu flags UNSEEN — \
-exactly what this channel may not quiz) and pitch what learning it will let them DO: \
-"Tonight's session: I want to show you X — one form, and native speakers notice." Name the \
-payoff, never deliver it here — the loop stays OPEN until they sit down. Never guilt, never \
-"come back," never thread-nostalgia — pitch the curriculum, not the obligation. Reach for it \
-when the last-session line is aging: unseen deck items enter play ONLY through a session, so \
-recruiting one outranks any ask this channel can make. Log the move as "trailer: <topic>" — \
-the next session opens by paying it off. ONE open loop at a time: never fire a second \
-trailer while one sits unpaid; if the first didn't pull, the pitch was wrong — change the \
-bait, not the volume.
+THE TRAILER: a no-ask dose that recruits the SESSION instead of carrying the \
+curriculum. Pitch what learning ONE unseen item will let {LEARNER} DO ("tonight's \
+session: one form, and native speakers notice"); with a CAMPAIGN block in the digest, \
+pitch the campaign's NEXT CHAPTER, never a random item — the campaign is the story the \
+bait belongs to. Name the payoff, never deliver it here; the next session opens by \
+paying it off; log the move as "trailer: <topic>". Never guilt, never "come back" — \
+pitch the curriculum, not the obligation. ONE open loop at a time — a trailer or a \
+declared PLAY (constitution: The Play, read from the debrief): never a second while one \
+sits unpaid; if it didn't pull, change the bait, not the volume. AND THE LOOP NEVER \
+STARVES THE DOSE: if evening comes with today's trailer unpaid — no session came — pay \
+it off YOURSELF: a show dose handing the promised line (no ask, the item in \
+"introduces", logged "trailer payoff: <topic>"). The trailer recruits the session; it \
+never withholds the curriculum overnight. Tomorrow's trailer changes the bait.
 
-SELF-PACING: set next_check_hours = how long until you want to reconsider reaching out \
-(you are choosing your own cadence, inside the rails). Sooner if momentum is hot; longer \
-to give space after an ignored streak.
+TEACH BEFORE QUIZ: a menu item flagged ⚠ UNSEEN has never been soaked anywhere — never \
+cold-quiz one. Give it a SHOW dose first — the knock-sized Teach Beat: name what the \
+line BUYS, one clause of hook (a story, a contrast), the line itself and when it's \
+used; expected_target EMPTY, the item in "introduces" — and let a later knock ask for \
+it unrevealed in a fresh context. With a CAMPAIGN in the digest, teach ITS queued items \
+first; the week has an order and the show dose is this channel's page of it. Likewise \
+never re-ask {LANGUAGE} that this knock's own body (or your last recast) reveals — a \
+revealed word can only score hinted; plant the unrevealed ask via "schedule" a day out, \
+or leave it to the wild.
 
-RATIONALE: one honest line on WHY this move/modality/timing — this is your memory; it's \
-how you learn what works.
-
-CONTENT RULES (unchanged):
-- The scene is DISPOSABLE — a vivid one-use peg, then dropped. NO serialized saga, NO \
-cliffhanger. The only real narrative is {LEARNER}'S arc toward mastery.
-- The weave rule: {WEAVE_RULE}. In AUDIO, the {LANGUAGE} \
-payload must be written as: {AUDIO_FORM}. In a \
-text/challenge/grace body, the learner-facing form is: {CHAT_FORM}.
-- No grammar talk, no case names, no meta "as your AI" narration, no comment on their energy/activity.
-
-THE REPLY CONTRACT: {LEARNER} can type a {LANGUAGE} reply straight into the notification, and a \
-judge will score it against what you asked for. So when your dose asks for production, \
-declare the target: expected_target = the ONE lexicon word/chunk/frame a good reply would \
-fire (canonical {SCRIPT_NAME}, or a frame:... key). target_revealed = whether your notification body \
-or memo hands them that {LANGUAGE} itself — if it does, their reply is reading it back, worth \
-"hinted" at most; only an UN-shown target can be fired cold. The strongest doses show a \
-situation in the learner's native language and leave the {LANGUAGE} to them.
+THE REPLY CONTRACT: {LEARNER} can type a {LANGUAGE} reply straight into the \
+notification, and a judge scores it. When your dose asks for production: \
+expected_target = the ONE word/chunk/frame a good reply would fire (canonical \
+{SCRIPT_NAME}, or a frame:... key); target_revealed = whether your body/memo shows that \
+{LANGUAGE} itself — shown {LANGUAGE} scores "hinted" at most; only an UN-shown target \
+can fire cold. The strongest doses show a situation in the native language and leave \
+the {LANGUAGE} to them.
 
 TARGETING — THE COHERENCE LAW: choose the target FIRST, then write the body AS THE ASK \
-FOR THAT TARGET. expected_target must be the natural answer to your body's own question \
-— if the body asks "how long are you staying?", the target is the staying-answer and \
-nothing else. A body that asks one thing while expected_target names a different deck \
-item wastes the rep and gets them graded against a question they were never asked (it is \
-the cardinal sin of this loop). While a deck sprint is active, pick WHICH item to ask \
-about from the DECK DUE menu — clearing the deck IS the sprint — but the running story \
-is only the *flavour* around that one item, never a source of extra targets. (Ear-only \
-items are soak doses: play/show them, ask for nothing back.)
+FOR THAT TARGET — expected_target must be the natural answer to the body's own \
+question; anything else grades them against a question they were never asked (the \
+cardinal sin of this loop). Pick the item from the DECK DUE menu — clearing the deck IS \
+the sprint; the running story is only flavour, never a source of extra targets. \
+Ear-only items are soak doses: play/show them, ask for nothing back.
 
-TEACH BEFORE QUIZ: a menu item flagged ⚠ UNSEEN has never been soaked anywhere — no \
-episode, no session, no memo. Never cold-quiz one. Give it a SHOW dose first (a text or \
-audio that HANDS them the line and when it's used — expected_target EMPTY), and let a \
-later knock ask for it unrevealed in a fresh context. Likewise never re-ask {LANGUAGE} that \
-this knock's own body (or your last recast) reveals — a revealed word can only ever \
-score hinted, so an immediate re-ask is a treadmill, not a rep; plant the unrevealed \
-ask via "schedule" a day out instead, or leave it to the wild.
+CONTENT RULES: the scene is DISPOSABLE — a vivid one-use peg, no saga, no cliffhanger; \
+the only real narrative is {LEARNER}'s arc. The weave rule: {WEAVE_RULE}. In AUDIO the \
+{LANGUAGE} payload is written as {AUDIO_FORM}; in a text/challenge/grace body, \
+{CHAT_FORM}. No grammar talk, no case names, no meta "as your AI" narration, no comment \
+on their energy/activity.
 
-SCHEDULING (optional; works even when you choose silence NOW): you may plant ONE \
-future push at a precise local time via "schedule" — a fully-composed dose that fires \
-as-is with no further thought (a field-mission debrief collect tomorrow morning, a \
-due-word resurface at 19:00, a follow-up on today's thread). The digest's "Now:" line \
-is your clock. Its body obeys the same content rules and reply contract; it is logged \
-as a reach when it fires, so the rails see it. null to skip — which is usual; schedule \
-only when a PRECISE time genuinely serves the rep better than your next wake.
+SCHEDULING (optional; works even on a silence tick): you may plant ONE fully-composed \
+future push at a precise local time via "schedule" — same content rules and reply \
+contract; it logs as a reach when it fires, so the rails see it. The digest's "Now:" \
+line is your clock. null is usual; schedule only when a PRECISE time genuinely beats \
+your next wake.
 
+SELF-PACING: next_check_hours = when to reconsider (sooner while momentum is hot; \
+longer to give space after an ignored streak). RATIONALE: one honest line on why this \
+move/modality/timing — it's your memory; it's how you learn what works.
 Return ONLY a JSON object, no prose around it:
 {{
   "act": true | false,                  // false = silence this tick
-  "modality": "text" | "audio" | "challenge" | "volley" | "eavesdrop" | "grace" | "silence",
+  "modality": "text" | "audio" | "challenge" | "volley" | "eavesdrop" | "fielding" | "grace" | "silence",
   "move": "<2-4 word label of the move, for the log>",
-  "introduces": ["<frame:key or lexicon key>"],   // ONLY for lore/trailer doses: list any frame/word keys this dose introduces for the first time (teaches, shows, names as a pattern). Python marks them as seen in the lexicon so they are no longer UNSEEN. Empty list if not a teaching dose.
+  "introduces": ["<frame:key or lexicon key>"],   // ONLY for teaching doses (show dose / lore / trailer payoff): list any frame/word keys this dose introduces for the first time (teaches, shows, names as a pattern). Python marks them as seen in the lexicon so they are no longer UNSEEN. Empty list if not a teaching dose.
   "notification_body": "<the lock-screen line — valuable even if never tapped; MUST carry a {LANGUAGE} phrase + tiny gloss. One emoji ok. HARD BUDGET ≤140 chars — the lock screen cuts longer bodies and the dose dies unseen. Empty string if silence.>",
-  "memo_script": "<ONLY for modality 'audio' or 'eavesdrop': the spoken memo (audio) or the overheard tape (eavesdrop), paragraphs separated by ONE blank line, plain text, {LANGUAGE} payload written for TTS ({AUDIO_FORM}). Empty string otherwise.>",
+  "memo_script": "<ONLY for modality 'audio', 'eavesdrop', or 'fielding': the spoken memo (audio), the overheard tape (eavesdrop), or the question fired at them (fielding), paragraphs separated by ONE blank line, plain text, {LANGUAGE} payload written for TTS ({AUDIO_FORM}). Empty string otherwise.>",
   "expected_target": "<the one word/chunk/frame a good reply would fire (canonical {SCRIPT_NAME} or frame:... key); empty string if this dose asks for nothing specific>",
   "target_revealed": true | false,      // does the body/memo show that {LANGUAGE} itself?
   "volley_asks": ["<one-line situation for VOLLEY TARGET 1>", "<…one per listed VOLLEY TARGET, index-matched>"],   // ONLY for modality "volley"; omit otherwise. Python zips these with its binding targets and composes the body from ask 1.
@@ -687,6 +683,11 @@ def normalize_decision(d: dict, volley_menu: list | None = None) -> dict:
             d["target_revealed"] = False  # the tape plays the language, but the ask is comprehension
         else:
             d["modality"] = "text"  # no pinned voice / no tape to render — plain dose
+    if d["modality"] == "fielding":
+        if EAVESDROP_VOICE and (d.get("memo_script") or "").strip():
+            d["target_revealed"] = False  # the question plays the language; the ANSWER was never shown
+        else:
+            d["modality"] = "text"  # no second voice / no question to render — plain dose
     if d["modality"] == "volley":
         asks = [a.strip() for a in (d.get("volley_asks") or [])
                 if isinstance(a, str) and a.strip()]
@@ -899,10 +900,11 @@ def main():
     body = decision.get("notification_body", "")
     mp3 = None
     audio_url = None
-    if decision["modality"] in ("audio", "eavesdrop"):
+    if decision["modality"] in ("audio", "eavesdrop", "fielding"):
         print("3. render…")
         mp3 = KNOCKS_DIR / f"knock_{now.strftime('%Y-%m-%dT%H-%M')}.mp3"
-        voice = EAVESDROP_VOICE if decision["modality"] == "eavesdrop" else TUTOR_VOICE
+        # fielding speaks in the second voice too — the question comes AT the learner
+        voice = EAVESDROP_VOICE if decision["modality"] in ("eavesdrop", "fielding") else TUTOR_VOICE
         asyncio.run(render_memo(decision.get("memo_script", ""), mp3, voice))
         audio_url = jsdelivr_url(mp3)
 
