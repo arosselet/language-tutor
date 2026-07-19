@@ -141,6 +141,25 @@ what it replaces.
   lore/eavesdrop cooldown guards, teach-first `introduces` + `is_unseen()`,
   pull-before-read status banner, delivery retry, deck-tier ordering (since
   re-seamed as `deck.tiers` config — next entry).
+- **Third milestone re-sync — carried in at `template-v4-source`** (2026-07-19,
+  run before the reference impl's public post; its sync policy triggers on
+  sharing). The advance since v3, re-applied semantically: the fielding dose
+  (heard question in, produced answer out — gated on the second voice), the
+  KF-10 volley surface fix (volley_open_ask — whatever Python tracks, Python
+  says), the campaign (profile block + digest + seed orders), the mandate
+  subtraction (including the lore-preference-line deletion the v3 sync missed),
+  Teach Beat + Play canon, the minimum-law daily_session (session_tools.md
+  deleted — absorbed), narrated_drama as a commissioned batch-soak form, the
+  tier-0 deck headline, SFX-as-air, _vN feed resolution, the ticket crash
+  guard, /recalibrate + the tutor intent gate + one-owner command safety +
+  KF-9/10, prose budgets (measured, ~5–8% headroom), and smoke parity s14–s23 —
+  closing the v3 gap where mechanisms shipped without their regression cases.
+  **Known gap, deliberate:** the sidecar-claims-payload law has no
+  deterministic home here (the template's studio is agent-dispatched; the
+  reference impl enforces it in run_studio.py's lint) — it lives as producer.md
+  prose, first suspect if payload stamps misbehave. Also left behind: the
+  studio watchdog and the lunch anchor (learner/local pack), /backport
+  (reference-impl side).
 - **Learner-dependent surfaces are setup-time elaborations, not template
   opinions** (2026-07-16). When a backported feature's value depends on the end
   user (deck tiers were the instance: whether registers have a pecking order is
