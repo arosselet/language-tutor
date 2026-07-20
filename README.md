@@ -1,5 +1,7 @@
 # Sollu — a personal coach your agent builds around you
 
+[![Smoke Test](https://github.com/arosselet/language-tutor/actions/workflows/smoke.yml/badge.svg)](https://github.com/arosselet/language-tutor/actions/workflows/smoke.yml)
+
 A template for bootstrapping a **persistent, stateful language coach** for any
 language — powered by whatever coding agent you already use (Claude Code,
 Gemini CLI, …). Clone it, say *"set up my tutor"*, answer a ten-minute
@@ -38,14 +40,17 @@ default Noto Grantha font claims exactly those codepoints, and Chrome picks
 fallback per run by its FIRST character — such runs render as tofu for any
 Ubuntu+Chrome visitor. Evidence: docs/DECISIONS.md (2026-07-19). -->
 
-
 **The worked example:** this template was extracted from
 [tamil-tutor](https://github.com/arosselet/tamil-tutor), a real system in daily
 use for months. `docs/WORKED_EXAMPLE.md` distills how each template elaborated
 there; `docs/DECISIONS.md` seeds the lessons it learned the hard way. This
 snapshot elaborates tamil-tutor at tag `template-v4-source`; the reference
 implementation moves ahead of it, and the template re-syncs by wholesale
-re-extraction at stable milestones — not per-fix backports.
+re-extraction at stable milestones — not per-fix backports. The synthesis has
+also run cold beyond its origin: a second tutor (Dutch, Netherlands colloquial)
+was elaborated from a fresh interview in one sitting, both culture-dependent
+rules deriving correctly — *flipped* for the new language, not copied
+(`docs/DECISIONS.md`, 2026-07-19).
 
 ## Quick start
 
@@ -79,9 +84,11 @@ a situation, no warm-up)? Everything serves moving that number:
   into input.
 - **Register-first, ruthlessly.** The dialect people actually speak; textbook
   and literary registers are ignored entirely.
-- **Assessment is invisible; correction is a recast.** No quizzes, no grammar
-  terminology. The tutor says it the natural way, moves on, and quietly
-  updates state.
+- **Teaching is generous; assessment is invisible.** A new item enters through
+  one open-handed **teach beat** — its payoff, a story hook, the word shown
+  living — before any channel may quiz it. From then on correction is a recast:
+  no quizzes, no grammar terminology; the tutor says it the natural way, moves
+  on, and quietly updates state.
 - **Momentum over accountability.** Contact time beats completion; one rep
   beats zero; no streaks, no guilt. The coach reaches first — and backs off
   when you say you're busy, because that's a real answer.
@@ -97,8 +104,10 @@ next chat forces cold:
 
 - **The daily session** (~5–15 min chat) — opens by *giving* (the running
   story, a payoff, a tape — never "what do you want to do today?"), then the
-  day's shape carries honest cold volume: fires are moves inside a scene, and
-  on a fried day the espresso floor (payoff, three fires, out) still counts.
+  day's shape carries honest cold volume: fires are moves inside a scene, the
+  week's **campaign** (a unit you called, that every medium reads) names
+  tomorrow's shape so you know what you're sitting down to, and on a fried day
+  the espresso floor (payoff, three fires, out) still counts.
 - **The studio** — a three-role production crew (Director → Architect →
   Producer) the tutor commissions end-to-end: dual-voice podcast episodes in
   native TTS voices, published to an RSS feed your podcast app subscribes to.
@@ -145,6 +154,8 @@ scripts/              → The engine: state, ticket, render, drills, knock, judg
 docs/                 → WORKED_EXAMPLE, CUSTOMIZATION, DECISIONS, PROTOCOL_MAP, phone_loop
 .github/workflows/    → The ticks: knock decisions, push-queue drain, reply judging, smoke test
 .claude/ + .gemini/   → Thin per-agent shells (/setup, /tutor, /studio)
+                        + the @build playbooks: /orient, /debug, /validate,
+                          /extend, /verify, /recalibrate
 ```
 
 ## After setup
