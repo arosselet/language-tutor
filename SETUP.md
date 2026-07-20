@@ -166,10 +166,14 @@ pretending day zero:
   tutor*: what phrases do they say already? What do they reliably understand
   at the table but never produce? What did an app once teach them?
 - Seed each item honestly: `python scripts/sync_state.py add-word '<canonical>'
-  --gloss '...' [--phonetic '...'] --recognition comfortable|solid`, then
-  `update --produced-cold '<word>'` **only** for what they can genuinely fire
-  unaided today (when in doubt, leave production at none — a flattering meter
-  is a lying meter; the floor climbing is the game).
+  --gloss '...' [--phonetic '...'] --recognition comfortable|solid`. **Add ALL
+  words first, then log every genuine cold in ONE batched call** —
+  `update --produced-cold '<w1>' --produced-cold '<w2>' …` (the flag repeats) —
+  and **only** for what they can genuinely fire unaided today (when in doubt,
+  leave production at none — a flattering meter is a lying meter; the floor
+  climbing is the game). Every `update` appends a session-log entry with a
+  floor snapshot: per-word calls forge N day-zero "sessions", each frozen at a
+  pre-add denominator. The intake is one event; log it as one.
 - Patterns they half-own (a tense toggle, a politeness form) → `add-pattern`.
 - If the stake has a date, draft a finite **deck** with the learner
   (`curriculum/deck.json`, schema per `curriculum/deck.json.example` — chunks
@@ -214,10 +218,19 @@ pretending day zero:
    name — copy `.claude/skills/tutor/` to `.claude/skills/<name>/` and update
    its `name:` field (keep `/tutor` too or delete it; same for the Gemini
    command). Add a `logo.jpg` for the podcast feed art.
+6. **Shed the template's demo:** delete the welcome episode
+   (`published_audio/welcome.mp3`, `published_audio/welcome_art.jpeg`,
+   `content/scripts/welcome.md`) and the README's welcome-player block — they
+   belong to the template, not this tutor, and the mp3 is dead weight in every
+   future clone.
 
 ### Phase 7 — Verify, Then Hand Over
 
 1. `python scripts/smoke_test.py` → ALL GREEN.
+   **CI note:** the *initial* push to a just-created repo may log a phantom
+   `startup_failure` (workflow "BuildFailed", 0s) — a GitHub Actions race on a
+   seconds-old repo, not your workflows. Confirm health with
+   `gh workflow run smoke.yml` (green ≈ CI fine); any later push clears it.
 2. `python scripts/sync_state.py status` and `python scripts/suggest_targets.py`
    — a coherent day-zero (or post-intake) ticket: candidates by cluster, deck
    block if seeded, sane fence.

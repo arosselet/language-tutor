@@ -167,3 +167,23 @@ what it replaces.
   plus a worked example in SETUP.md as grist for the setup agent — never the
   reference impl's concrete values hardcoded in a script. Replaces the
   half-Tamil DECK_TIERS map that rode in with the 07-16 backport.
+- **First cold elaboration (Dutch) validates the headline claim** (2026-07-19).
+  `dutch-tutor` was bootstrapped from the live interview; both hard derivations
+  flipped correctly (Weave to sentence-boundary — Dutch doesn't code-switch;
+  Modality Split collapsed — shared script, `script_regex: null`), the masks
+  re-rooted to Dutch social geography, and the no-informant case elaborated
+  cleanly. One content error found in review (a misspelled loanword past
+  tense). Retires the "designed but never elaborated" caveat on the template's
+  agent-elaborated-infrastructure claim.
+- **Word entry outside a session refreshes the learner status line; the intake
+  sweep logs as ONE update** (2026-07-19). `add-word`/`add-pattern`/`seed-deck`
+  now recompute `learner.json`'s thin fields (smoke s24), and SETUP Phase 5
+  orders adds-before-colds with the cold claims batched into one `update`.
+  Replaces the per-word intake calls that forged 12 day-zero "sessions" and
+  left a stale 100% floor in the Dutch bootstrap (true floor 12/35).
+- **A phantom `startup_failure` on the initial push is a GitHub race, not a
+  workflow bug** (2026-07-19). The Dutch repo's first push logged workflow
+  "BuildFailed" (0s) while all four YAMLs were valid and byte-identical to
+  this repo's green ones; a manual smoke dispatch ran green. SETUP Phase 7 now
+  names it so first impressions survive; rejects hardening the workflows
+  themselves for a failure they don't cause.

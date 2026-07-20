@@ -269,6 +269,15 @@ def write_thin_learner(learner: dict, episodes: dict):
     print(f"  Updated learner.json ({LEARNER_PATH.relative_to(BASE)})")
 
 
+def refresh_learner_status():
+    """Words entering outside a session (add-word / add-pattern / seed-deck)
+    change the floor's denominator; a status line stamped before them lies until
+    the next `update`. Recompute now — a flattering meter is a lying meter."""
+    learner = load_json(LEARNER_PATH)
+    if learner is not None:
+        write_thin_learner(learner, load_json(EPISODES_PATH) or {})
+
+
 # --- Commands ----------------------------------------------------------------
 
 def cmd_update(args):
@@ -446,6 +455,7 @@ def cmd_add_pattern(args):
         "last_surfaced": today,
     }
     save_json(LEXICON_PATH, lexicon)
+    refresh_learner_status()
     print(f"  + Pattern '{args.key}' seeded — {args.gloss}")
     print(f"    (recognition {args.recognition}, production none)")
     print(f"    Log a cold novel instance later with:  update --produced-cold '{args.key}'")
@@ -482,6 +492,7 @@ def cmd_add_word(args):
         "last_surfaced": date.today().isoformat(),
     }
     save_json(LEXICON_PATH, lexicon)
+    refresh_learner_status()
     print(f"  + '{args.key}' — {args.gloss} (recognition {args.recognition}, phonetic {list(args.phonetic)})")
 
 
@@ -556,6 +567,7 @@ def cmd_seed_deck(args):
             rec.pop("direction", None)
             pruned.append(w)
     save_json(LEXICON_PATH, lexicon)
+    refresh_learner_status()
     deck = compute_deck(lexicon, args.deck)
     print(f"  Seeded deck '{args.deck}': +{created} new, {updated} re-tagged, {len(pruned)} un-tagged.")
     for w in pruned:

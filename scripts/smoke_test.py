@@ -1088,6 +1088,22 @@ def s23_ticket_end_to_end(sb: Path):
           "not found" not in text, text[:200])
 
 
+def s24_intake_status_refresh(sb: Path):
+    print("\n24. Intake meter honesty: word entry outside a session refreshes the status line")
+    from types import SimpleNamespace
+    ss = importlib.import_module("sync_state")
+    learner_path = sb / "progress" / "learner.json"
+    # Stamp the current truth, then grow the floor's denominator outside a session —
+    # the intake-sweep shape that left a stale "100%" in the first cold elaboration.
+    ss.refresh_learner_status()
+    before = read_json(learner_path)["status"]
+    ss.cmd_add_word(SimpleNamespace(key="palabra de humo", gloss="smoke word",
+                                    phonetic=[], recognition="solid"))
+    after = read_json(learner_path)["status"]
+    check("add-word recomputes the stored status line",
+          before != after and "fire cold" in after, f"{before!r} -> {after!r}")
+
+
 def main():
     with tempfile.TemporaryDirectory(prefix="tutor-smoke-") as tmp:
         sb = make_sandbox(Path(tmp))
@@ -1115,6 +1131,7 @@ def main():
         s21_volley_represent(kr, sb)
         s22_sfx_pause(sb)
         s23_ticket_end_to_end(sb)
+        s24_intake_status_refresh(sb)
 
     print(f"\n{'ALL GREEN' if not FAILURES else 'FAILURES: ' + ', '.join(FAILURES)}")
     sys.exit(1 if FAILURES else 0)
