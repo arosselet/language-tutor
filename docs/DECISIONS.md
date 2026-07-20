@@ -187,3 +187,12 @@ what it replaces.
   this repo's green ones; a manual smoke dispatch ran green. SETUP Phase 7 now
   names it so first impressions survive; rejects hardening the workflows
   themselves for a failure they don't cause.
+- **README Tamil never starts a run with ப, வ, or a Tamil digit** (2026-07-19).
+  Ubuntu's default `fonts-noto-core` ships Noto Grantha, whose cmap claims
+  exactly those 15 Tamil codepoints (Grantha shares them) and nothing else in
+  the block; Chrome picks fallback per text run keyed on the run's FIRST
+  character, so வாங்க வாங்க rendered as tofu for every Ubuntu+Chrome visitor
+  while சொல்லுங்க rendered fine. Verified by controlled render: a run led by a
+  safe letter renders whole (நீங்க வாங்க is fine). GitHub allows no font
+  control, so the example became சாப்பிடுங்க சாப்பிடுங்க; an HTML comment in
+  README pins the rule. Replaces வாங்க வாங்க as the worn-smooth example.

@@ -29,9 +29,15 @@ origin language as its star. The form is itself a first lesson in register:
 சொல்லு is how an elder speaks *down* the table, and said *up* the table it
 takes the respect ending — சொல்லுங்க (*sollunga*). That ending is doing live
 work: it signals where you stand with the person you're facing. (Other endings
-have worn smooth — வாங்க வாங்க, "come, come!", greets everyone at the door
-alike.) Which endings carry meaning and which are just how the word sounds now
-is exactly the kind of thing the tutor derives for your language and teaches.
+have worn smooth — சாப்பிடுங்க சாப்பிடுங்க, "eat, eat!", urges everyone at the
+table alike.) Which endings carry meaning and which are just how the word sounds
+now is exactly the kind of thing the tutor derives for your language and teaches.
+
+<!-- Tamil here must never START a run with ப, வ, or a Tamil digit: Ubuntu's
+default Noto Grantha font claims exactly those codepoints, and Chrome picks
+fallback per run by its FIRST character — such runs render as tofu for any
+Ubuntu+Chrome visitor. Evidence: docs/DECISIONS.md (2026-07-19). -->
+
 
 **The worked example:** this template was extracted from
 [tamil-tutor](https://github.com/arosselet/tamil-tutor), a real system in daily
