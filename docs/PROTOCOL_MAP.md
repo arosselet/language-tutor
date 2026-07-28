@@ -71,8 +71,8 @@ playbooks) · `validate` (health checks + safe/mutating inventory) · `extend`
 
 | File | Owner | Holds |
 |---|---|---|
-| `lexicon.json` | `sync_state.py` | Word brain: recognition + production axes, patterns/engines, deck tags + fire/catch direction, viability floor |
-| `learner.json` | `sync_state.py` | Continuity: running story (`last_debrief`), `soak_order`, status (no streak — recency from the session log is the honest signal) |
+| `lexicon.json` | `sync_state.py` | Word brain: recognition + production axes, patterns/engines, deck tags + fire/catch direction + `pairs_with`, lifetime `reps` + `exposures` ledger, viability floor |
+| `learner.json` | `sync_state.py` | Continuity: running story (`last_debrief`), `soak_order`, `focus_cohort` (the stored ≤`focus_size` drill-set membership), status |
 | `episodes.json` | `sync_state.py` / `render_audio.py` | Episode registry |
 | `session_log.json` | `sync_state.py` | Append-only momentum log |
 | `feedback_log.json` | `sync_state.py feedback` | The ledger the diagnosis pass reads |

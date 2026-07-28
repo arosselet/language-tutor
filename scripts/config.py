@@ -35,6 +35,7 @@ _DEFAULTS = {
     },
     "deck": {"name": "sprint", "label": "Sprint Deck",
              "deadline": None, "deadline_label": "deadline", "tiers": []},
+    "curriculum": {"focus_size": 12, "ask_cooldown_days": 3},
 }
 
 
@@ -128,6 +129,20 @@ DECK_LABEL = DECK.get("label", "Sprint Deck")
 DECK_TIERS = {reg: i for i, t in enumerate(DECK.get("tiers") or [])
               for reg in t.get("registers", [])}
 TIER_NAMES = {i: t.get("name", "") for i, t in enumerate(DECK.get("tiers") or [])}
+
+
+# ── Curriculum dials ──────────────────────────────────────────────────────────
+# The floor splits into two budgets because coverage and depth genuinely
+# conflict: one ranked list either touches everything once a month (nothing
+# graduates) or hammers a dozen (the tail rots).
+CURRICULUM = CONFIG.get("curriculum", {})
+# How many words sit in dense rotation at once. Membership is sticky — the
+# cohort advances and graduates together rather than churning. Raise it for a
+# learner with more daily contact time, lower it for less.
+FOCUS_SIZE = CURRICULUM.get("focus_size", 12)
+# How long an unanswered ask suppresses re-asking the same item. Pester
+# tolerance is personal; this is the one knob for it.
+ASK_COOLDOWN_DAYS = CURRICULUM.get("ask_cooldown_days", 3)
 
 
 def deck_deadline():

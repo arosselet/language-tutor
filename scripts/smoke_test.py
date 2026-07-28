@@ -34,7 +34,7 @@ import json
 import shutil
 import sys
 import tempfile
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 REAL_BASE = Path(__file__).resolve().parent.parent
@@ -46,6 +46,11 @@ WORD_A = "basta"                  # target word, unrevealed-ask fixture
 WORD_B = "me encanta"             # second word, revealed-ask fixture
 WORD_C = "ya me acostumbre"       # third word (capped/volley fixtures)
 WORD_EAR = "sabes que"            # ear-only catch fixture
+# The sandbox pins config/tutor.json.example, so the deck name is fixed by the
+# fixture just like the words above. Named once — a deck tag that doesn't match
+# it is silently not a deck member, which is a test that passes for the wrong
+# reason.
+DECK_FIXTURE = "sprint"
 
 
 def check(name: str, cond: bool, detail: str = ""):
@@ -420,7 +425,7 @@ def s8_variety_and_decay(mk, kr, sb: Path):
     write_json(lex_path, {
         WORD_A: {"gloss": "enough", "phonetic": [], "recognition": "struggled",
                  "production": "none", "seen_in": [], "last_surfaced": None,
-                 "deck": "sprint", "direction": "fire"},
+                 "deck": DECK_FIXTURE, "direction": "fire"},
     })
     menu = mk.deck_due_list()
     check("never-soaked deck item flagged UNSEEN", "UNSEEN" in menu, menu)
@@ -718,7 +723,7 @@ def s13_eavesdrop(mk, kr, sb: Path):
     write_json(lex_path, {w: {
         "gloss": "you know?", "phonetic": [], "recognition": "struggled",
         "production": "none", "seen_in": [], "last_surfaced": "2026-07-01",
-        "deck": "sprint", "direction": "catch", "type": "chunk"}})
+        "deck": DECK_FIXTURE, "direction": "catch", "type": "chunk"}})
     kr.push_to_phone, kr.commit_and_push = Recorder(), Recorder()
     now = datetime.now(timezone.utc)
 
@@ -956,7 +961,7 @@ def s20_fielding(mk, kr, sb: Path):
     write_json(lex_path, {WORD_A: {
         "gloss": "enough", "phonetic": [], "recognition": "comfortable",
         "production": "none", "seen_in": ["M1"], "last_surfaced": "2026-07-01",
-        "deck": "trip", "direction": "fire", "type": "chunk"}})
+        "deck": DECK_FIXTURE, "direction": "fire", "type": "chunk"}})
     kr.push_to_phone, kr.commit_and_push = Recorder(), Recorder()
     catch_calls = Recorder()
     kr.judge_catch = catch_calls
@@ -1104,6 +1109,432 @@ def s24_intake_status_refresh(sb: Path):
           before != after and "fire cold" in after, f"{before!r} -> {after!r}")
 
 
+def s25_deck_rotation_and_coverage(mk, sb: Path):
+    """Deck starvation — the selector ordered by tier → ripeness with no staleness
+    term, so the head of each tier was frozen and the tail never surfaced. Two
+    mechanisms, both proven here: least-recently-worked sorts first WITHIN a tier
+    (the tier prefix itself is the touchdown bar and must survive), and
+    `deck_coverage` counts worked/total so the tail is legible.
+
+    Also covers the two 07-26 defects: (1) the cooldown-as-coverage key forgot
+    day-4 work, resetting it — so a small cycle churned while most of the
+    population was unreachable; (2) rep counting mined the tutor's prose for
+    mentions, allocating focus seats by mention frequency. Reps are declared now:
+    the judge seam increments the counter per fired word; `rep_counts` reads that
+    counter, never the log.
+    (ported from the reference impl's s32)"""
+    print("\n25. Deck rotation + coverage: the tail is not starved")
+    import contextlib
+    import io
+    st = importlib.import_module("suggest_targets")
+    ss = importlib.import_module("sync_state")
+    today = date.today()
+
+    def ago(n):
+        return (today - timedelta(days=n)).isoformat()
+
+    def item(reg, **kw):
+        base = {"deck": DECK_FIXTURE, "gloss": "x", "phonetic": [], "type": "chunk",
+                "recognition": "struggled", "production": "none",
+                "seen_in": [1], "last_surfaced": None, "_reg": reg}
+        base.update(kw)
+        return base
+
+    fixture = {
+        # survival tier (antifreeze/requests), one row per starvation state
+        "smoke:surv-hot":    item("requests", type="pattern", production="hinted",
+                                  recognition="solid", last_surfaced=ago(2)),
+        "smoke:surv-mid":    item("antifreeze", recognition="comfortable", last_surfaced=ago(30)),
+        "smoke:surv-tail":   item("antifreeze"),              # never worked, soaked
+        "smoke:surv-unseen": item("requests", seen_in=[]),    # never worked, never seen
+        "smoke:surv-done":   item("requests", type="pattern", production="cold",
+                                  recognition="solid", last_surfaced=ago(1)),
+        "smoke:soc-new":     item("faq"),                     # social tier
+        "smoke:unlisted-new": item("unlisted"),               # no configured tier
+        # ear-only: same ordering law, must never land in a fire tier
+        "smoke:ear-stale":  item("ear", direction="catch"),
+        "smoke:ear-fresh":  item("ear", direction="catch",
+                                  recognition="comfortable", last_surfaced=ago(1)),
+    }
+    lex = {k: {kk: vv for kk, vv in v.items() if kk != "_reg"} for k, v in fixture.items()}
+    # Non-deck floor words governed by floor_gap_targets. Both never-surfaced and
+    # identical on every other term, so ask count is the only thing that can
+    # separate them — the old key fell through to alphabetical and froze floor-a
+    # (shorter key) in front forever.
+    lex.update({
+        "smoke:floor-a": {"gloss": "asked 5 days ago (outside cooldown)",
+                          "phonetic": [], "type": "chunk",
+                          "recognition": "comfortable", "production": "none",
+                          "seen_in": [1], "last_surfaced": None},
+        "smoke:floor-b": {"gloss": "never asked",
+                          "phonetic": [], "type": "chunk",
+                          "recognition": "comfortable", "production": "none",
+                          "seen_in": [1], "last_surfaced": None},
+    })
+    deck_file = sb / "curriculum" / f"{DECK_FIXTURE}_deck.json"
+    lex_path = sb / "progress" / "lexicon.json"
+    klog_path = sb / "progress" / "knock_log.json"
+    saved = (deck_file.read_bytes() if deck_file.exists() else None,
+             lex_path.read_bytes(), klog_path.read_bytes())
+    # Yesterday's volley asked surv-tail as its SECOND item — `expected_target`
+    # names only item 1, so items 2..n were invisible to the ask count while the
+    # volley is the deck's main volume channel.
+    recent_ts = (datetime.now(timezone.utc) - timedelta(hours=8)).isoformat()
+    old_ts = (datetime.now(timezone.utc) - timedelta(days=5)).isoformat()
+    klog = [{"acted": True, "timestamp": recent_ts, "modality": "volley",
+             "expected_target": "smoke:surv-mid", "body": "volley 1/2",
+             "volley": [{"target": "smoke:surv-mid", "ask": "a"},
+                        {"target": "smoke:surv-tail", "ask": "b"}]},
+            {"acted": True, "timestamp": old_ts, "modality": "knock",
+             "expected_target": "smoke:floor-a", "body": "the floor ask"}]
+    try:
+        write_json(deck_file, [{"word": k, "register": v["_reg"], "gloss": "x"}
+                               for k, v in fixture.items()])
+        write_json(lex_path, lex)
+        write_json(klog_path, klog)
+
+        asked = st.recent_ask_counts(klog, lex)
+        check("a volley's later items count as asked, not just item 1",
+              asked.get("smoke:surv-tail") == 1, f"got {asked}")
+        check("the volley's opening item still counts",
+              asked.get("smoke:surv-mid") == 1, f"got {asked}")
+
+        # Ask-count breaks the tie the never-worked cohort sits in:
+        # surv-tail and surv-unseen are both NEVER_SURFACED, but tail was asked.
+        deck = st.deck_status(lex, today=today)
+        order = [t["word"] for t in deck["pending"]]
+        check("within the never-worked cohort, least-asked leads (not alphabetical)",
+              order.index("smoke:surv-unseen") < order.index("smoke:surv-tail"),
+              f"got {order}")
+        check("ask-count stays subordinate to tier: an asked survival item still "
+              "outranks an unasked lower-tier item",
+              order.index("smoke:surv-tail") < order.index("smoke:unlisted-new"),
+              f"got {order}")
+        check("the ask count rides on the item for the menu's warning",
+              [t["asks"] for t in deck["pending"] if t["word"] == "smoke:surv-tail"] == [1],
+              f"got {deck['pending']}")
+        check("the knock menu names the recent ask",
+              "asked/shown 1×" in mk.deck_due_list(), f"got {mk.deck_due_list()}")
+        # One owner: the knock channel no longer re-sorts, so its picks must be
+        # the selector's own order.
+        vt = [t["target"] for t in mk.volley_targets(n=4)]
+        pend = [t["word"] for t in deck["pending"]]
+        check("the volley reads the selector's order, it does not re-sort",
+              [w for w in pend if w in vt] == vt, f"volley={vt} pending={pend}")
+        check("recent_ask_counts has one home",
+              not hasattr(mk, "recent_ask_counts"), "the knock-side copy survived")
+
+        # THE defects, both halves. (1) The cooldown-as-coverage key forgot
+        # floor-a's work after 3 days — that reset is why a small cycle churned
+        # forever while most words were unreachable. (2) The rep counter mined
+        # the tutor's prose for mentions — the same-day audit measured 100% of
+        # live reps as mentions. Reps are DECLARED now: the judge seam increments
+        # the lexicon counter per fired word and `rep_counts` reads that counter.
+        kr = importlib.import_module("knock_reply")
+        kr.apply_verdict({"fired": [{"word": "smoke:floor-a", "verdict": "hinted"}]},
+                         {}, lex, [])
+        check("a judged fired word increments the declared rep counter",
+              lex["smoke:floor-a"].get("reps") == 1, f"got {lex['smoke:floor-a']}")
+        reps = st.rep_counts(lex)
+        mention = {"acted": True, "timestamp": recent_ts, "modality": "text",
+                   "expected_target": "", "body": "smoke:floor-b mentioned in prose"}
+        check("a word PRINTED in a knock is a mention, never a rep",
+              "smoke:floor-b" not in reps, f"got {reps}")
+        check("the mention still feeds the reveal-cooldown — its one legitimate home",
+              st.recent_ask_counts(klog + [mention], lex).get("smoke:floor-b") == 1,
+              "the cooldown lost its probe matching")
+        check("coverage counts LIFETIME reps, not the 3-day cooldown",
+              reps.get("smoke:floor-a") == 1 and not asked.get("smoke:floor-a"),
+              f"got {reps} / asked {asked}")
+        focus, _bg = st.floor_gap_targets(lex, today, 20, asked=asked, reps=reps,
+                                          cohort=[])
+        order = [t["word"] for t in focus]
+        check("the never-drilled word leads the drilled one (not alphabetical)",
+              order.index("smoke:floor-b") < order.index("smoke:floor-a"), f"got {order}")
+        check("the rep count rides on the item so the ticket can show it",
+              [t["reps"] for t in focus if t["word"] == "smoke:floor-a"] == [1],
+              "floor item lost its reps")
+        check("the selector's default path reads the same declared counter",
+              [t["word"] for t in st.floor_gap_targets(lex, today, 20, cohort=[])[0]] == order,
+              "the default path disagrees with the injected one")
+        # One law, one definition: deck and floor both order by coverage_key.
+        check("both selectors share the ordering law",
+              st.coverage_key({"word": "x", "reps": 0}) < st.coverage_key({"word": "x", "reps": 1}),
+              "coverage_key does not lead with reps")
+
+        # Re-run the ordering laws with an empty log, so the coverage assertions
+        # below read the same fixture the rest of the case was written against.
+        write_json(klog_path, [])
+        deck = st.deck_status(lex, today=today, asked={})
+        order = [t["word"] for t in deck["pending"]]
+
+        # The regression: under the old key the ripe, recently-worked headliner
+        # led its tier forever. Least-recently-worked now leads.
+        check("a never-worked item outranks the ripe recently-worked headliner",
+              order[0] == "smoke:surv-tail", f"got {order}")
+        check("the worked headliner falls to the back of its tier",
+              order.index("smoke:surv-hot") > order.index("smoke:surv-mid"), f"got {order}")
+        check("tier prefix holds: a survival item always precedes a social item",
+              order.index("smoke:surv-unseen") < order.index("smoke:soc-new"), f"got {order}")
+        check("the touchdown bar survives: social tier precedes untiered items",
+              order.index("smoke:soc-new") < order.index("smoke:unlisted-new"), f"got {order}")
+        check("a cold item leaves the pending queue", "smoke:surv-done" not in order)
+
+        # The ear starved worst of all — same law applies.
+        catch_order = [t["word"] for t in deck["catch_pending"]]
+        check("the ear rotates too: the never-worked catch item leads",
+              catch_order[0] == "smoke:ear-stale", f"got {catch_order}")
+
+        # Rotation must not smuggle an UNSEEN item into a cold quiz (teach-first).
+        vt = [t["target"] for t in mk.volley_targets(n=4)]
+        check("rotation respects teach-first: UNSEEN stays out of the volley",
+              "smoke:surv-unseen" not in vt, f"got {vt}")
+        check("a never-worked but soaked item IS volley-eligible",
+              "smoke:surv-tail" in vt, f"got {vt}")
+
+        cov = st.deck_coverage(lex, today=today)
+        surv = cov["tiers"]["survival"]
+        soc = cov["tiers"]["social"]
+        check("survival coverage counts worked, not cold",
+              (surv["touched"], surv["total"], surv["cleared"]) == (3, 5, 1),
+              f"got {surv}")
+        check("ear-only items never inflate a fire tier",
+              soc["total"] == 1, f"social={soc}")
+        check("the ear is metered on its own axis",
+              (cov["catch"]["touched"], cov["catch"]["total"]) == (1, 2),
+              f"got {cov['catch']}")
+        check("a fully starved register is visible by name",
+              cov["registers"]["requests"]["untouched"] == 1
+              and cov["registers"]["antifreeze"]["touched"] == 1,
+              f"got {cov['registers']}")
+        check("social starvation is reported, not hidden",
+              soc["untouched"] == 1, f"got {soc}")
+        never = {u["word"] for u in cov["untouched"]}
+        check("every never-worked item is named",
+              never == {"smoke:surv-tail", "smoke:surv-unseen",
+                        "smoke:soc-new", "smoke:unlisted-new", "smoke:ear-stale"},
+              f"got {sorted(never)}")
+        check("soaked-but-never-asked is distinguished from never-encountered",
+              [u["soaked_only"] for u in cov["untouched"]
+               if u["word"] == "smoke:surv-unseen"] == [False], f"got {cov['untouched']}")
+
+        argv, out = sys.argv, io.StringIO()
+        try:
+            sys.argv = ["suggest_targets.py"]
+            with contextlib.redirect_stdout(out):
+                st.main()
+        finally:
+            sys.argv = argv
+        check("the ticket marks coverage as an engineering number",
+              "never narrated" in out.getvalue(), "coverage block carries no narration guard")
+
+        cd = ss.compute_deck(lex)
+        check("the status meter carries the coverage count",
+              (cd.get("untouched"), cd.get("surv_untouched"), cd.get("catch_untouched")) == (4, 2, 1),
+              f"got {cd}")
+    finally:
+        if saved[0] is not None:
+            deck_file.write_bytes(saved[0])
+        elif deck_file.exists():
+            deck_file.unlink()
+        lex_path.write_bytes(saved[1])
+        klog_path.write_bytes(saved[2])
+
+
+def s26_catch_response_pairs(mk, sb: Path):
+    """Catch-and-response is a first-class curriculum kind, and the schema had no
+    way to represent it. The pairing lived as English prose in note/gloss, so
+    nothing could drill a pair as a pair, and nothing noticed when seed-deck dropped
+    the response while its prompt kept its deck slot. `pairs_with` is the one
+    relation the schema carries; it must resolve inside the deck file, ride onto
+    the lexicon, and reach both surfaces that show catch items.
+    (ported from the reference impl's s33)"""
+    print("\n26. Catch/response pairs: hear X → say Y is representable")
+    import contextlib
+    import io
+    st = importlib.import_module("suggest_targets")
+    ss = importlib.import_module("sync_state")
+    deck_file = sb / "curriculum" / f"{DECK_FIXTURE}_deck.json"
+    lex_path = sb / "progress" / "lexicon.json"
+    saved = (deck_file.read_bytes() if deck_file.exists() else None,
+             lex_path.read_bytes())
+
+    class Args:
+        deck = DECK_FIXTURE
+
+    def seed(entries):
+        write_json(deck_file, entries)
+        a = Args()
+        a.file = str(deck_file)
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            ss.cmd_seed_deck(a)
+        return buf.getvalue(), json.loads(lex_path.read_text(encoding="utf-8"))
+
+    def ticket_text():
+        argv, out = sys.argv, io.StringIO()
+        try:
+            sys.argv = ["suggest_targets.py"]
+            with contextlib.redirect_stdout(out):
+                st.main()
+        finally:
+            sys.argv = argv
+        return out.getvalue()
+
+    # Catch prompt: a line the learner hears and must answer.
+    # Answer: the fire word they say back — the catch half alone is not the win.
+    prompt = WORD_EAR    # "sabes que" — ear-only catch line
+    answer = WORD_A      # "basta" — the fire response
+    paired = [
+        {"word": prompt, "gloss": "you know what / hey listen", "type": "chunk",
+         "direction": "catch", "recognition": "struggled", "phonetic": [],
+         "pairs_with": answer},
+        {"word": answer, "gloss": "that's enough / stop it", "type": "chunk",
+         "recognition": "struggled", "phonetic": []},
+    ]
+    try:
+        write_json(lex_path, {})
+        out, lex = seed(paired)
+        check("the pair rides from the deck file onto the lexicon",
+              lex[prompt].get("pairs_with") == answer, f"got {lex.get(prompt)}")
+        check("the answer is a FIRE item — the catch half alone is not the win",
+              lex[answer].get("direction") == "fire", f"got {lex.get(answer)}")
+
+        deck = st.deck_status(lex, today=date.today(), asked={})
+        cp = [t for t in deck["catch_pending"] if t["word"] == prompt]
+        check("deck_status resolves the pair for the drill",
+              cp and cp[0]["pairs_with"] == answer
+              and cp[0]["response_gloss"] == "that's enough / stop it",
+              f"got {cp}")
+        check("the ticket names the answer under the line they'll hear",
+              "the answer:" in ticket_text(), "the ear-only block hid the pair")
+        check("the knock menu marks a paired item so the tutor plays the catch line",
+              "[pair]" in mk.deck_due_list() and "never quiz the catch half alone" in mk.deck_due_list(),
+              f"got {mk.deck_due_list()}")
+
+        # THE regression: the response was dropped from the deck file while its
+        # prompt stayed. Silent before, then a loud refusal — a hard seed-time
+        # error now: the seed is refused whole BEFORE any write, so a split pair
+        # can never half-land. Fix the file, re-run.
+        before = lex_path.read_bytes()
+        try:
+            seed([paired[0]])
+            check("a split pair refuses the whole seed", False, "seed did not exit")
+        except SystemExit as e:
+            check("a split pair refuses the whole seed, loudly", e.code == 1,
+                  f"exit code {e.code}")
+        check("a refused seed writes NOTHING — no half-landed deck",
+              lex_path.read_bytes() == before, "lexicon changed on a refused seed")
+    finally:
+        if saved[0] is not None:
+            deck_file.write_bytes(saved[0])
+        elif deck_file.exists():
+            deck_file.unlink()
+        lex_path.write_bytes(saved[1])
+
+
+def s27_focus_and_background(sb: Path):
+    """Two budgets, not one ranked list: dense-repetition and coverage genuinely
+    conflict. One ranked list either touches every word once a month and graduates
+    nothing, or hammers a dozen and lets the tail rot. The first attempt at the fix
+    used a 3-day cooldown as the coverage term and stayed stuck in a small cycle
+    while most of the population was unreachable. Splitting the budget is what makes
+    both hold.
+    (ported from the reference impl's s34)"""
+    print("\n27. Focus set + background: dense reps without starving the tail")
+    st = importlib.import_module("suggest_targets")
+    ss = importlib.import_module("sync_state")
+    lex_path = sb / "progress" / "lexicon.json"
+    klog_path = sb / "progress" / "knock_log.json"
+    saved = (lex_path.read_bytes(), klog_path.read_bytes())
+    today = date.today()
+
+    # 20 words, all recognized and none cold: more than the focus set can hold.
+    lex = {f"smoke:w{i:02d}": {"gloss": f"w{i}", "phonetic": [], "type": "chunk",
+                               "recognition": "comfortable", "production": "none",
+                               "seen_in": [1], "last_surfaced": None,
+                               **({"reps": 3} if i < 5 else {})}
+           for i in range(20)}
+    try:
+        write_json(lex_path, lex)
+        write_json(klog_path, [])
+        # cohort=[] is the SEED path — no membership stored yet.
+        focus, background = st.floor_gap_targets(lex, today, 99, cohort=[])
+        fw = [t["word"] for t in focus]
+
+        check("the focus set is capped at FOCUS_SIZE",
+              len(focus) == st.FOCUS_SIZE, f"got {len(focus)}")
+        check("everything else lands in background, nothing is dropped",
+              len(focus) + len(background) == len(lex),
+              f"{len(focus)}+{len(background)} != {len(lex)}")
+        check("seeding gives words already started their focus seats",
+              all(f"smoke:w{i:02d}" in fw for i in range(5)), f"got {fw}")
+        check("open seats are filled from the never-drilled words",
+              len([w for w in fw if not lex[w].get("reps")]) == st.FOCUS_SIZE - 5, f"got {fw}")
+        check("the background is exposure-only and knows it",
+              all(t["band"] == "background" for t in background), "band mislabelled")
+        check("within the focus set the least-drilled lead, so the cohort advances together",
+              [t["reps"] for t in focus] == sorted(t["reps"] for t in focus), f"got {fw}")
+
+        # Membership is STORED STATE: reconcile persists the seed, and held seats
+        # then stand regardless of what any counter says — a membership fact in a
+        # file cannot be reallocated by a counting bug.
+        cohort = st.reconcile_focus(lex, [])
+        check("reconcile seeds the same cohort the seed derivation shows",
+              sorted(cohort) == sorted(fw), f"got {cohort}")
+        noisy = {w: 99 for w in cohort}  # a corrupt counter must not move seats
+        held = [t["word"] for t in st.floor_gap_targets(lex, today, 99, reps=noisy,
+                                                        cohort=cohort)[0]]
+        check("stored membership holds its seats against counter noise",
+              sorted(held) == sorted(cohort), f"got {held}")
+
+        # Graduation: cold leaves the cohort for good and the seat refills from
+        # the background order — the ONLY way membership changes.
+        lex["smoke:w00"]["production"] = "cold"
+        cohort2 = st.reconcile_focus(lex, cohort)
+        check("a word that fires cold leaves the cohort for good",
+              "smoke:w00" not in cohort2, f"got {cohort2}")
+        check("the other seats survive the graduation",
+              set(cohort) - {"smoke:w00"} <= set(cohort2), f"got {cohort2}")
+        focus2, bg2 = st.floor_gap_targets(lex, today, 99, cohort=cohort2)
+        check("its seat is refilled from the background",
+              len(focus2) == st.FOCUS_SIZE, f"got {len(focus2)}")
+        check("the graduated word is gone from both budgets",
+              "smoke:w00" not in [t["word"] for t in focus2] + [t["word"] for t in bg2],
+              "a graduated word came back")
+
+        # The tail must actually be reachable — the property the first fix lacked.
+        # The ORDER spreads reps; the exact per-session pace is a tutor choice.
+        seen, reps = set(), {}
+        for _ in range(40):
+            f, b = st.floor_gap_targets(lex, today, 99, asked={}, reps=dict(reps),
+                                        cohort=[])
+            for t in f[:6]:
+                seen.add(t["word"])
+                reps[t["word"]] = reps.get(t["word"], 0) + 1
+            # Exposure closes the loop through the REAL delivery seam
+            # (sync_state.mark_exposed — the write every dose channel calls).
+            # Without it the background order never changes and the same words
+            # are exposed forever; rotation is guaranteed because being exposed
+            # moves a word to the back of its own queue.
+            for t in b[:2]:
+                seen.add(t["word"])
+                ss.mark_exposed(lex, [t["word"]], today=today.isoformat())
+        check("every word is reachable — no word is stranded behind the alphabet",
+              len(seen) == len(lex) - 1, f"reached {len(seen)} of {len(lex) - 1}")
+        check("no word is hammered while others wait",
+              max(reps.values()) - min(reps.values()) <= 2, f"spread {sorted(reps.values())}")
+        check("the delivery stamp counts as well as dates",
+              any(r.get("exposures") for r in lex.values()), "mark_exposed wrote no count")
+        check("less-exposed sorts ahead of more-exposed — the flip of the old anti-coverage key",
+              st.coverage_key({"word": "x", "exposures": 0})
+              < st.coverage_key({"word": "x", "exposures": 3}),
+              "coverage_key still rewards prior exposure")
+    finally:
+        lex_path.write_bytes(saved[0])
+        klog_path.write_bytes(saved[1])
+
+
 def main():
     with tempfile.TemporaryDirectory(prefix="tutor-smoke-") as tmp:
         sb = make_sandbox(Path(tmp))
@@ -1132,6 +1563,9 @@ def main():
         s22_sfx_pause(sb)
         s23_ticket_end_to_end(sb)
         s24_intake_status_refresh(sb)
+        s25_deck_rotation_and_coverage(mk, sb)
+        s26_catch_response_pairs(mk, sb)
+        s27_focus_and_background(sb)
 
     print(f"\n{'ALL GREEN' if not FAILURES else 'FAILURES: ' + ', '.join(FAILURES)}")
     sys.exit(1 if FAILURES else 0)

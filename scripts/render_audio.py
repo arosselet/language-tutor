@@ -421,11 +421,18 @@ def register_mission_in_state(script_path: Path, mp3_path: Path):
 
     save_json(EPISODES_PATH, episodes)
 
-    # Provenance bridge: record that these declared words appeared in this episode.
-    # seen_in is pure provenance (which episodes a word is in); recency (last_surfaced)
-    # is bumped when the episode is actually listened to, via sync_state --listened.
+    # Provenance bridge + exposure ledger: record that these declared words
+    # appeared in this episode and stamp the delivery.
+    # seen_in is pure provenance (which episodes a word is in). mark_exposed
+    # stamps last_surfaced + increments `exposures` — episode registration IS
+    # the first delivery (ledger law: declared by the seam that ships the dose,
+    # never mined from prose). New words get `exposures: 1` at birth; existing
+    # words get mark_exposed called so coverage rotation sees them.
     # (lexicon + phon were loaded above; cleaned_words are already canonical.)
     if lexicon:
+        from sync_state import mark_exposed as _mark_exposed
+        from datetime import date as _date
+        today = _date.today().isoformat()
         mnum = int(mission_num)
         tagged = 0
         created = 0
@@ -436,9 +443,12 @@ def register_mission_in_state(script_path: Path, mp3_path: Path):
                 # recognition ladder — heard, not yet known, so it stays below
                 # the fence until the tutor observes recognition. gloss/phonetic
                 # backfill later, the same as sync_state's set_recognition.
+                # `exposures: 1` seeds the ledger — this episode IS its first
+                # delivery.
                 lexicon[w] = {
                     "gloss": "", "phonetic": [], "recognition": "struggled",
-                    "production": "none", "seen_in": [mnum], "last_surfaced": None,
+                    "production": "none", "seen_in": [mnum],
+                    "last_surfaced": today, "exposures": 1,
                 }
                 created += 1
                 continue
@@ -447,10 +457,13 @@ def register_mission_in_state(script_path: Path, mp3_path: Path):
                 if mnum not in seen:
                     seen.append(mnum)
                     seen.sort()
-                    tagged += 1
+                # Stamp delivery — the episode is the exposure, regardless of
+                # whether this is a new seen_in entry or a re-registration.
+                _mark_exposed(lexicon, [key], phon_index=phon, today=today)
+                tagged += 1
         if tagged or created:
             save_json(Path("progress/lexicon.json"), lexicon)
-            msg = f"   ↳ tagged {tagged} lexicon words seen_in M{mnum}"
+            msg = f"   ↳ exposed {tagged} lexicon words via M{mnum} (seen_in + delivery stamp)"
             if created:
                 msg += f"; +{created} NEW words registered (recognition=struggled, gloss empty — backfill later)"
             print(msg)

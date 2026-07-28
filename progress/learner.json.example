@@ -2,6 +2,7 @@
   "learner": "Your Name",
   "last_debrief": "System initialized.",
   "soak_order": {},
+  "focus_cohort": [],
   "recent_missions": [],
   "status": "Ready for first session."
 }

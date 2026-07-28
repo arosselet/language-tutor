@@ -189,8 +189,14 @@ def main():
         return
 
     print("3. publish…")
+    # Delivery seam (ledger law): the due items Python put on the sheet went out
+    # the door — declared exposure, stamped at publish. `pending` is the same
+    # list `deck_due_payload` returned — the selector's menu, not a prose scan.
+    from sync_state import record_exposure, LEXICON_PATH
+    exposed = record_exposure([t["word"] for t in pending])
     subprocess.run([sys.executable, str(BASE / "scripts" / "rebuild_rss.py")], cwd=BASE, check=True)
-    commit_and_push([mp3, BASE / "rss.xml"], f"Drill track: {sheet.get('title', mp3.stem)}")
+    commit_and_push([mp3, BASE / "rss.xml"] + ([LEXICON_PATH] if exposed else []),
+                    f"Drill track: {sheet.get('title', mp3.stem)}")
     print("4. notify…")
     push_to_phone(f"drill's up — {len(sheet['items'])} out loud, gaps are yours 🎧",
                   jsdelivr_url(mp3))

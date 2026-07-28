@@ -45,7 +45,7 @@ from render_chat import render_chat
 from morning_knock import (OPENROUTER_BASE, MODEL, KNOCK_LOG_PATH, parse_llm_json,
                            load_env, push_to_phone, commit_and_push,
                            maybe_enqueue_schedule)
-from sync_state import (LEXICON_PATH, FEEDBACK_LOG_PATH, load_json, save_json,
+from sync_state import (LEXICON_PATH, LEARNER_PATH, FEEDBACK_LOG_PATH, load_json, save_json,
                         build_phonetic_index, resolve, compute_deck, fires_today)
 
 PRODUCTION_RANK = {"none": 0, "hinted": 1, "cold": 2}
@@ -599,6 +599,11 @@ def apply_verdict(verdict: dict, knock: dict, lexicon: dict, klog: list,
         else:
             summary.append(f"{key} already {cur} — kept ({grade} fire)")
         rec["last_surfaced"] = today
+        # The knock half of the rep ledger: every word in a judged reply's fired
+        # list is a DECLARED production event — any verdict, partial counts.
+        # This counter replaced mining the tutor's prose for mentions, which
+        # allocates focus seats by mention frequency and flags undrilled words stuck.
+        rec["reps"] = rec.get("reps", 0) + 1
     return summary, cold_credited, capped_keys, graduated
 
 
@@ -727,8 +732,21 @@ def main():
     save_json(LEXICON_PATH, lexicon)
     save_json(KNOCK_LOG_PATH, klog)
 
+    # A phone graduation opens a focus seat — reconcile the stored cohort at
+    # this write seam exactly as cmd_update does at the session seam.
+    from suggest_targets import reconcile_focus  # lazy: keeps module import light
+    learner = load_json(LEARNER_PATH) or {}
+    new_cohort = reconcile_focus(lexicon, learner.get("focus_cohort", []))
+    cohort_changed = set(new_cohort) != set(learner.get("focus_cohort", []))
+    if cohort_changed:
+        learner["focus_cohort"] = new_cohort
+        save_json(LEARNER_PATH, learner)
+        print(f"   focus cohort reconciled ({len(new_cohort)} seats held)")
+
     print("3. commit + push…")
     commit_paths = [LEXICON_PATH, KNOCK_LOG_PATH, render_chat()]
+    if cohort_changed:
+        commit_paths.append(LEARNER_PATH)
     # Meta-direction lands in the feedback ledger — the diagnosis pass reads it.
     if verdict["meta_note"]:
         flog = load_json(FEEDBACK_LOG_PATH) or []

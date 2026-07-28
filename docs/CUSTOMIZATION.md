@@ -28,7 +28,9 @@ profile.md says the number.
 | `outreach.*` | waking window, daily cap, min gap, LLM model | make knocks quieter/louder; swap models |
 | `outreach.volley_size` | deck items per volley knock (the daily blitz) | raise it when the deck's burn rate trails the deadline |
 | `deck.*` | sprint name/label/deadline | set when a real date appears; clear after |
-| `deck.tiers` | ordered priority groups over the deck's registers (position = priority; see SETUP.md Phase 5 for the worked example) | set when some registers MUST land before others matter; empty = flat ripeness ordering |
+| `deck.tiers` | ordered priority groups over the deck's registers (position = priority; see SETUP.md Phase 5 for the worked example) | the example ships `survival`/`social` tiers — edit to match your deck's real pecking order; empty = flat ripeness ordering |
+| `curriculum.focus_size` | how many words sit in the dense-drill rotation (the focus cohort) at once | raise for more daily contact time; lower to narrow the fire window (default 12) |
+| `curriculum.ask_cooldown_days` | how many days before the same word can re-appear as a knock ask | your pester tolerance — lower = more repetition, higher = more variety (default 3) |
 
 ### `protocol/` — the pedagogy and the people
 | File | Owns | Tweak when |

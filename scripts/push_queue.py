@@ -211,8 +211,16 @@ def cmd_drain(args):
 
     KNOCK_LOG_PATH.write_text(json.dumps(klog, ensure_ascii=False, indent=2), encoding="utf-8")
     save_queue(kept)
+    # A scheduled dose is a knock push: a revealed target is a declared exposure
+    # (ledger law), stamped at the same seam that fired it. A hidden ask-only
+    # entry stamps nothing — `target_revealed` false means the target text was not
+    # shown, so the knock is spend (an ask), not delivery.
+    from sync_state import LEXICON_PATH, record_exposure
+    exposed = record_exposure([e["expected_target"] for e in fired
+                               if e.get("expected_target") and e.get("target_revealed", True)])
     if not args.no_commit:
-        commit_and_push([QUEUE_PATH, KNOCK_LOG_PATH, render_chat()],
+        commit_and_push([QUEUE_PATH, KNOCK_LOG_PATH, render_chat()]
+                        + ([LEXICON_PATH] if exposed else []),
                         f"Scheduled push fired ({', '.join(e['id'] for e in fired)})")
     print(f"done — fired {len(fired)}, {len(kept)} still queued.")
 

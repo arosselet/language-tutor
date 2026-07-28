@@ -60,6 +60,14 @@
     "label": "Sprint Deck",
     "deadline": null,
     "deadline_label": "deadline",
-    "tiers": []
+    "tiers": [
+      {"name": "survival", "registers": ["antifreeze", "requests"]},
+      {"name": "social", "registers": ["faq"]}
+    ]
+  },
+
+  "curriculum": {
+    "focus_size": 12,
+    "ask_cooldown_days": 3
   }
 }

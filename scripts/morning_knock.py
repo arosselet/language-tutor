@@ -46,7 +46,8 @@ BASE = Path(__file__).parent.parent
 sys.path.insert(0, str(BASE / "scripts"))
 from config import (LOCAL_TZ, LEARNER, TUTOR, LANGUAGE, TUTOR_VOICE,
                     EAVESDROP_VOICE, REPO, OUTREACH, VOLLEY_SIZE, CHAT_FORM,
-                    AUDIO_FORM, WEAVE_RULE, SCRIPT_NAME, TTS_PROVIDER)
+                    AUDIO_FORM, WEAVE_RULE, SCRIPT_NAME, TTS_PROVIDER,
+                    ASK_COOLDOWN_DAYS)
 from render_audio import (generate_segment_google, generate_segment_edge,
                           get_raw_mp3_frames, SILENCE_FRAME, clean_memo_for_tts)
 from render_chat import render_chat
@@ -296,79 +297,76 @@ def remaining_room(klog: list, now: datetime) -> str:
             f"{streak_str}{lore_str}{eavesdrop_str}")
 
 
-def recent_ask_counts(klog: list, lexicon: dict, days: int = 3) -> dict:
-    """word → how many fired knocks in the last `days` asked for it (the original
-    expected_target) or printed it (body/memo/recast, whole chains). Ripest-first
-    alone keeps the same headliner on top of the menu every day — the same ask
-    re-fires under different move names and caps itself at hinted forever."""
-    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
-    recent = []
-    for k in klog:
-        if not is_fire(k):
-            continue
-        try:
-            ts = datetime.fromisoformat((k.get("timestamp") or "").replace("Z", "+00:00"))
-        except ValueError:
-            continue
-        if ts.tzinfo is None:
-            ts = ts.replace(tzinfo=timezone.utc)
-        if ts < cutoff:
-            continue
-        texts = [k.get("body", ""), k.get("memo_script", ""), k.get("reply_line", "")]
-        texts += [x.get("reply_line", "") for x in k.get("exchanges", [])]
-        recent.append((k.get("expected_target", ""), " ".join(t for t in texts if t).lower()))
-    counts = {}
-    for word, rec in lexicon.items():
-        probes = [word.lower()] + [p.lower() for p in rec.get("phonetic", []) if p]
-        n = sum(1 for tgt, blob in recent
-                if tgt == word or any(p in blob for p in probes))
-        if n:
-            counts[word] = n
-    return counts
+def knock_exposures(decision: dict) -> list[str]:
+    """The DECLARED exposure of a knock — what target language actually went out
+    the door (ledger law: declared by the seam that assembles the dose, never
+    mined from the dose's prose):
+      - `introduces` keys (teaching doses show the item — the see-it-first gap),
+      - a revealed `expected_target` (the body/memo printed the target text itself),
+      - an eavesdrop's target (the tape SPEAKS it; target_revealed is false there
+        only because the ask is comprehension, not because the item was hidden).
+    A hidden target is an ASK — spend, not exposure — and stamps nothing."""
+    keys = list(decision.get("introduces") or [])
+    target = (decision.get("expected_target") or "").strip()
+    if target and (decision.get("target_revealed") or decision.get("modality") == "eavesdrop"):
+        keys.append(target)
+    return keys
 
 
 def deck_due_list(max_fire: int = 6, max_catch: int = 2) -> str:
-    """The sprint deck's due items, ripest first BUT recently-asked last, so a
-    knock's expected_target can hit what's actually due instead of re-running
-    yesterday's ask. `sync_state status` carries only the deck METER; this is
-    the menu. Items never soaked anywhere are flagged UNSEEN — the mandate
-    forbids cold-quizzing those (teach first, show dose)."""
+    """The sprint deck's due items, ordered by the selector (tier → ask-cooldown
+    → coverage law — see suggest_targets.deck_status). `sync_state status` carries
+    only the deck METER; this is the menu. Items never soaked anywhere are flagged
+    UNSEEN — the mandate forbids cold-quizzing those (teach first, show dose).
+
+    The selector's order is now authoritative: consuming deck_status as given is
+    the fix for the re-sort bug where a stable sort by ask count alone made it the
+    OUTERMOST key, so an asked-once high-tier item fell below an unasked low-tier
+    one. Ask count is read from the item's `asks` field for display."""
     from suggest_targets import deck_status  # lazy: keeps module import light
     from sync_state import LEXICON_PATH, is_unseen
     lex = load_json(LEXICON_PATH) or {}
     deck = deck_status(lex)
     if not deck or not deck["pending"]:
         return ""
-    asked = recent_ask_counts(load_json(KNOCK_LOG_PATH) or [], lex)
-    pending = sorted(deck["pending"], key=lambda t: asked.get(t["word"], 0))
+    pending = deck["pending"]  # selector order is authoritative — do not re-sort
     lines = ["DECK DUE (the sprint menu — expected_target should usually come from here):"]
     for t in pending[:max_fire]:
         state = "hinted→cold" if t["production"] == "hinted" else f"{t['recognition']}, cold-pending"
         if is_unseen(lex.get(t["word"], {})):
             state += " · ⚠ UNSEEN — teach first (show dose), don't quiz"
-        n = asked.get(t["word"], 0)
+        n = t["asks"]  # already computed by deck_status with the configured cooldown
         if n:
-            state += f" · ⚠ asked/shown {n}× in last 3d — needs a genuinely new scene, or pick another item"
+            state += (f" · ⚠ asked/shown {n}× in last {ASK_COOLDOWN_DAYS}d"
+                      f" — needs a genuinely new scene, or pick another item")
         lines.append(f"    [{t['kind']}] {t['word']} — {t['gloss'] or '[no gloss]'}  [{state}]")
     for t in deck["catch_pending"][:max_catch]:
-        lines.append(f"    [ear-only] {t['word']} — {t['gloss'] or '[no gloss]'}  "
-                     f"(soak/eavesdrop dose only — never ask them to fire it)")
+        if t.get("pairs_with"):
+            # A paired catch item is the one ear-only case the learner DOES answer:
+            # the line is aimed at them and silence is the wrong move. Play the
+            # catch line; let them say the answer. Never quiz the catch half alone.
+            lines.append(f"    [pair] {t['word']} — {t['gloss'] or '[no gloss]'}  "
+                         f"→ the answer: {t['pairs_with']} — {t.get('response_gloss') or '[no gloss]'}  "
+                         f"(play this line, let them respond — never quiz the catch half alone)")
+        else:
+            lines.append(f"    [ear-only] {t['word']} — {t['gloss'] or '[no gloss]'}  "
+                         f"(soak/eavesdrop dose only — never ask them to fire it)")
     return "\n".join(lines)
 
 
 def volley_targets(n: int = VOLLEY_SIZE) -> list[dict]:
     """The BINDING item list for a volley knock — Python picks so deck coverage
     stays honest (the tutor's taste concentrates reps on the same few headliners
-    while the long tail gets zero touches). Due-first, recently-asked last,
-    UNSEEN and ear-only items excluded (teach-first / never-fire laws)."""
+    while the long tail gets zero touches). The selector's order is authoritative
+    (tier → ask-cooldown → coverage law); UNSEEN and ear-only items are excluded
+    (teach-first / never-fire laws)."""
     from suggest_targets import deck_status  # lazy: keeps module import light
     from sync_state import LEXICON_PATH, is_unseen
     lex = load_json(LEXICON_PATH) or {}
     deck = deck_status(lex)
     if not deck or not deck["pending"]:
         return []
-    asked = recent_ask_counts(load_json(KNOCK_LOG_PATH) or [], lex)
-    pending = sorted(deck["pending"], key=lambda t: asked.get(t["word"], 0))
+    pending = deck["pending"]  # selector order is authoritative — do not re-sort
     out = []
     for t in pending:
         if is_unseen(lex.get(t["word"], {})):
@@ -917,10 +915,12 @@ def main():
         return
 
     path = log_decision(now, decision, acted=True, audio_url=audio_url, mp3=mp3)
-    from sync_state import LEXICON_PATH as _LP
+    from sync_state import LEXICON_PATH as _LP, record_exposure
     extra_paths: list[Path] = []
     if decision.get("introduces"):
         mark_frames_seen(decision["introduces"])
+        extra_paths.append(_LP)
+    if record_exposure(knock_exposures(decision)):
         extra_paths.append(_LP)
     commit_paths = [path, render_chat()] if mp3 is None else [mp3, path, render_chat()]
     commit_paths.extend(extra_paths)
