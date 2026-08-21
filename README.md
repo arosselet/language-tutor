@@ -2,6 +2,36 @@
 
 [![Smoke Test](https://github.com/arosselet/language-tutor/actions/workflows/smoke.yml/badge.svg)](https://github.com/arosselet/language-tutor/actions/workflows/smoke.yml)
 
+> ### Status: this is a 2026-07-27 snapshot, and it is behind
+>
+> Sollu is extracted from a working system — [tamil-tutor](https://github.com/arosselet/tamil-tutor),
+> which one person uses every day. That is the template's whole value and also
+> its catch: **the extraction is only as mature as the day it was taken.**
+>
+> This copy is `template-v5`, cut on 2026-07-27. The source has moved ~310
+> commits since, and August was a consolidation month — the sprawl of a
+> bottom-up build getting deleted and refactored rather than extended. So the
+> gap is not a lag, it is a **different architecture**. Missing here entirely:
+> the state-layer split (`state_io` / `slips` / `session_brief`), the prompt-canon
+> module (`mandates`), the commissioning law, the capacity-routing law
+> (`audio_channels`), and the long-haul audio lane. Also present here and since
+> fixed upstream: symlinked `AGENTS.md` / `.agents/skills` (they do not survive a
+> Windows checkout — you get a 9-byte text file and no instructions), a publish
+> path with no rebase that swallows its own failure, and staleness scored on the
+> host clock instead of the learner's.
+>
+> **Nothing here is promised to anyone and nobody is waiting on it — MIT, you get
+> what you pay for.** The honest thing is to name the gap rather than let the
+> badge imply currency. If you are building on this, read it as a design study,
+> not a maintained dependency.
+>
+> **v6 will be a fresh extraction, not a patch** — the architecture diverged too
+> far to sync file-by-file, and re-deriving is what forces the language/machinery
+> boundary to be redrawn honestly. It lands when the source is actually done
+> moving, measured rather than scheduled: no new `scripts/*.py` and no size-budget
+> raise for a month. Watching the calendar is how a stale note stays up for fifty
+> days; watching the ratchet is not.
+
 A template for bootstrapping a **persistent, stateful language coach** for any
 language — powered by whatever coding agent you already use (Claude Code,
 Gemini CLI, …). Clone it, say *"set up my tutor"*, answer a ten-minute
