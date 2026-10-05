@@ -117,6 +117,9 @@ def _timeline_problems(t: dict) -> list[str]:
             out.append(f"{where}: days must be a positive integer or null")
         if p.get("intake") is not None and not isinstance(p["intake"], int):
             out.append(f"{where}: intake is an integer override or null")
+    if events and not any(p.get("days") is None for p in phases[:phases.index(events[0])]):
+        out.append("timeline.phases: at least one phase before the event needs days null, "
+                   "so a moved date re-phases the run-up")
     if t.get("default_direction", next(iter(dirs), None)) not in dirs:
         out.append("timeline.default_direction is not in timeline.directions")
     return out
