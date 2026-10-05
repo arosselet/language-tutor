@@ -13,8 +13,13 @@ from pathlib import Path
 
 BASE = Path(__file__).parent.parent
 sys.path.insert(0, str(BASE / "scripts"))
-from pack import MAX_REACHES_PER_DAY, MIN_GAP_HOURS, WAKING_END_HOUR, WAKING_START_HOUR  # noqa: F401
+from pack import MAX_REACHES_PER_DAY, MIN_GAP_HOURS, WAKING_END_HOUR, WAKING_START_HOUR
 from state_io import LOCAL_TZ, is_fire, local_date
+
+# The rails are re-exported: lanes ask `rails`, never the pack, for the budget.
+__all__ = ["MAX_REACHES_PER_DAY", "MIN_GAP_HOURS", "WAKING_END_HOUR", "WAKING_START_HOUR",
+           "in_waking_window", "reaches_today", "last_fire", "SUPPLY_WINDOW_DAYS",
+           "SUPPLY_FLOOR_MIN", "PLEASURE_MIN_GAP_DAYS", "pleasure_due"]
 
 
 def in_waking_window(now: datetime | None = None) -> bool:
