@@ -1,7 +1,10 @@
 # Sollu v6 — Fresh Extraction Spec
 
 > **Status:** specification only, 2026-10-05. Nothing is implemented yet.
-> **Source:** `tamil-tutor` at `8a4ccf9` (2026-10-04). It gets tagged `template-v6-source` when work starts.
+> **Source:** `tamil-tutor` at `da209f2` (2026-10-05), the first commit that carries both
+> landed §0 seams and the 10-05 pedagogy changes (§3 item 11). The census figures below
+> are from that commit. W0 tags tamil-tutor HEAD as `template-v6-source` and re-takes the
+> census there, because the source ships daily.
 > **Replaces:** the v5 tree of this repo (`template-v5-source`, 2026-07-27). Only
 > `README.md` (with its embedded video), `LICENSE`, and the welcome media are kept.
 > **First real user:** Andrew's teammate, learning French. The spec settles nothing
@@ -19,7 +22,7 @@ the extraction copies a clean seam instead of inventing one.
 |---|---|---|---|
 | **Landed 2026-10-05** | The surface rule (how speakable and readable Tamil are written) was restated in 9 prompt sites and had drifted three ways on register. It is now `language.VOICE_FORM` / `READ_FORM`, spliced everywhere; `dialect.md` keeps the register default; `s129` fails on a retyped rule | One sentence to change, no more drift | `language.audio_form` / `chat_form` |
 | **Landed 2026-10-05** | Stored romanizations (`lexicon.phonetic`) are deleted; keys are script and every surface he reads is generated (`writer.to_phonetic`), including the sort-tape push-back. This removes a false "recently shown" match (substring hits like `om` in "from") | Honest cold credit; less code (state_io 127 → 111) | Nothing to template. The read form is generated, never stored, for any language |
-| Candidate, not approved | About 20 call sites import raw script regexes (`TAMIL_RE`, `TAMIL_RUN`, `TAMIL_TAIL_RE`, `strip_pulli`) to answer three different questions. Role-named accessors (`is_canonical`, `has_target`/`target_runs`, `stem`) would make each lane name its question | Clearer lanes, a simpler `s91` | The plug point for *declare, don't detect* (§4.5) |
+| **Approved (D12), lands before W1** | Eight mechanism files import raw script tests (`is_tamil`, `TAMIL_RE`, `TAMIL_RUN`, `TAMIL_TAIL_RE`, `strip_pulli`) to answer three different questions: 41 references, counting the declarations in `language.py`. They include the ledger's own key lookup (`state_io.resolve`). Role-named accessors (`is_canonical`, `has_target`/`target_runs`, `stem`) would make each lane name its question | Clearer lanes, a simpler `s91` | The plug point for *declare, don't detect* (§4.5). Without it, W2 has to redesign these six lanes while it ports them (§4.2) |
 | Not worth doing | Renaming `Anna`/`Andrew` identifiers, log strings and the `ANNA_PUSH_WEBHOOK_URL` secret | Churn and an outward-facing secret change for no learning benefit | Mechanical rename at W2 |
 
 ---
@@ -68,7 +71,7 @@ file-by-file port.
 | `README.md` framing, the Sollu name story, the embedded video, `welcome.mp3` + `welcome_art.jpeg` + `content/scripts/welcome.md` | Every `scripts/*.py`. They are a July architecture with no ledger, state split, writer or voice canon |
 | The uninitialized/initialized router: no config means you are the **Setup Guide**, not the tutor | `.gemini/` shells and the `AGENTS.md` symlink, which breaks on a Windows checkout |
 | SETUP.md's phased interview → derive → synthesize → init → intake → wire → verify → hand over | The intake sweep's `--recognition comfortable` self-claims. These contradict the current ledger law (§4.4) |
-| The four prompt fragments (`chat_form`, `audio_form`, `weave_rule`, `register_note`) as the channel from language to Python | `protocol/` prose. It teaches the old *viability floor / forced cold output* thesis that tamil-tutor has since retired |
+| Prompt fragments as the channel from language to Python. v5 had four (`chat_form`, `audio_form`, `weave_rule`, `register_note`). tamil-tutor converged on two (`READ_FORM`/`VOICE_FORM`, 2026-10-05) and leaves the register default in `dialect.md`. v6 keeps `audio_form`, `chat_form` and `weave_rule` (D13) | `protocol/` prose. It teaches the old *viability floor / forced cold output* thesis that tamil-tutor has since retired |
 | The `.template` + **(fixed)/(synthesize)** section convention | v5 smoke suite, `config.py`, and every `docs/` file except as reference material |
 | Workflows that **skip cleanly until bootstrapped**, plus cron ticks that ship commented out | |
 | `WORKED_EXAMPLE.md` as a quality bar ("match the specificity, never copy") | Its July content. It gets rewritten from October Tamil |
@@ -102,7 +105,7 @@ These are the capabilities v6 must carry. They are also the reason a v5 patch wo
    (`toolbelt`, `heist`, `learner_contract`) is kept out of it so prompts stay small.
 6. **The world.** `content/household.md` is a fictional recurring cast with **pinned TTS
    voices**, standing facts, a monthly **arc** and a beat log. `month.py` holds the arc's
-   month and `year.py` holds the phase schedule toward a dated anchor.
+   month and `year.py` holds the phase schedule toward a dated anchor (`timeline.py` in v6, D8).
 7. **Audio law:** `commissioning.md` (the tutor may make any audio at any time) and
    `audio_channels.md` (capacity routes the format). There are six lanes: soak,
    rotation (with lore movements), drill, episode, `lesson_audio`, plus payoff and sort
@@ -110,10 +113,21 @@ These are the capabilities v6 must carry. They are also the reason a v5 patch wo
 8. **Phone loop maturity:** a knock with seven modalities, open-ask and message lanes,
    `rails.py` as the one reach budget, the push queue, the commission router, payoff
    re-cuts, and the receptive check delivered as a tape.
-9. **Ratchets:** prose word budgets and code-line budgets, plus `/extend` Gate 4 ("what
+9. **Ratchets:** prose word budgets and code-line budgets, `PROHIBITION_BUDGET` (a coarse
+   count of *never / must not / do not / don't* across protocol prose and the LLM
+   mandates, so a new prohibition retires an old one), plus `/extend` Gate 4 ("what
    does this replace?").
 10. **Learner's half:** `learner_contract.md` holds the daily deal (session anchor +
     separate ear block), the one thing that is asked for, and what the learner owes back.
+11. **Measuring is separate from teaching** (2026-10-05). *Stories teach; lists check.*
+    A list never teaches, but asking from one is welcome. **The sweep** is infrastructure,
+    like the rails: pages of meanings the learner answers and the tutor grades. Gentler
+    lessons leave it alone, and only the learner turns it down. Checks draw from every
+    `untested` row, taught or not. A right recognition answer proves first contact and
+    sets `taught_on`, and a miss lands on `struggled`. A tap reports what the learner
+    did and never writes a rung. **`exemplars.md`** gives the tutor and the studio a few
+    contrasting days that worked, read as a range to land outside of. It replaces reading
+    past scripts as models. Diagnosis prunes a rule before it turns a dial.
 
 ---
 
@@ -123,7 +137,7 @@ There are four layers. **L0 pedagogy** and **L1 mechanism** ship as fixed files.
 **L2 language pack** and **L3 learner pack** ship as slots, which means templates or
 config keys. **Personal/infra** never ships.
 
-### 4.1 `protocol/` (14.3k words today)
+### 4.1 `protocol/` (14.7k words today)
 
 | File | Layer | What is Andrew/Tamil in it | v6 fate |
 |---|---|---|---|
@@ -133,14 +147,15 @@ config keys. **Personal/infra** never ships.
 | `persona.md` | L2 + L3 | All of it: Anna, Coimbatore, Kongu, elder brother, the masks (mother-in-law, neenga-forms), voice lines | **Template** (synthesize). Keep the v5 fixed/synthesize split, updated to the comprehension charge |
 | `user.md` | L3 | All of it: ten years married, "started at year nine" | **Template.** These are standing facts no generator may contradict |
 | `heist.md` | L3 | The secret reveal to the wife, field missions, somatic anchors | **Template → `stake.md`.** Op mechanics (anchor = free, mission = assigned and collected, *debrief is contact, never evidence*) stay fixed. Secrecy is optional, kept only if the stake is reveal-shaped |
-| `learner_contract.md` | L3 + L0 | The lunch anchor, the separate ear block, "a ratchet might start to hurt" | **Template.** The skeleton is fixed (the floor, no ratchet, what the learner owes back). The daily deal is synthesized from the interview |
+| `learner_contract.md` | L3 + L0 | The lunch anchor, the separate ear block, "a ratchet might start to hurt" | **Template.** The skeleton is fixed: the floor, no ratchet, what the learner owes back, and *the sweep is infrastructure* (only the learner turns it down). The daily deal is synthesized from the interview |
+| `exemplars.md` | L0 rule + L3 content | Every entry: four of Andrew's days (10-04 sweep, 07-28 commission, 07-20 teardown, M77), with his own words. Read by the tutor, the Director and the Architect | **Fixed rule, synthesized content.** The file's frame ships fixed: read as a range, land outside it, keep 4–5 contrasting entries and replace one when it stops being true. A new learner has no days yet, so it ships a short neutral seed that the learner's own days replace (D14) |
 | `dialect.md` | L2 | All of it: verb collapse, sandhi, Kongu layer, the neenga default | **Template** (the most-edited pack file after setup) |
 | *(new)* `language.md` | L2 | v5 had this as a charter. In tamil-tutor its content is spread across the constitution | **Template.** Target register, Weave letter, Modality letter, register ladder, lore veins |
 | `studio/{studio,director,architect,producer}.md` | L1 | Tamil-script examples (producer: 9 lines), "Coimbatore", Thanglish | **Fixed**, with neutral examples and pack references |
 | `studio/hosts.md` | L1 + L2 | Analysts Maya/Raj, Coimbatore; "Tamil script only" production rule | **Fixed conventions.** The analyst names move to `world.md`, and "script only" becomes `{audio_form}` |
 | `persona.md.example` | — | Old v3-era stub | **Delete** |
 
-### 4.2 `scripts/` (16.8k Python lines + 14.7k smoke lines)
+### 4.2 `scripts/` (16.8k Python lines + 15.0k smoke lines)
 
 **The language pack today** is `language.py` + `rails.py` constants + `writer.py` models. These are the facts a setup agent writes:
 
@@ -158,21 +173,36 @@ config keys. **Personal/infra** never ships.
 
 | File | Andrew/Tamil load | v6 approach |
 |---|---|---|
-| `mandates.py` (640 lines, 15 prompt constants) | "You are Anna… Andrew's phone"; Tamil examples (`poren`, `புரியல`, `saapteengala`); Kongu; "Tamil script"; Thanglish | Neutral mechanism prose with `{tutor}`, `{learner}`, `{chat_form}`, `{audio_form}`, `{weave_rule}`, `{register_note}`, and a small set of **example slots** (`examples.repair_line`, `examples.recast`, `examples.pattern_tease`, …). The setup agent writes those in the target language. Examples carry real weight in prompt quality, so they become pack data. We don't delete them |
+| `mandates.py` (644 lines, 17 prompt constants + `SHAPE_CLAUSES`) | "You are Anna… Andrew's phone"; Tamil examples (`poren`, `புரியல`, `saapteengala`); Kongu; "Tamil script"; Thanglish | Neutral mechanism prose with `{tutor}`, `{learner}`, `{chat_form}`, `{audio_form}`, `{weave_rule}`, `{register_note}`, and a small set of **example slots** (`examples.repair_line`, `examples.recast`, `examples.pattern_tease`, …). The setup agent writes those in the target language. Examples carry real weight in prompt quality, so they become pack data. We don't delete them |
 | `run_studio.py` (879) | `DIRECTOR`/`ARCHITECT`/`PRODUCER` prompts; **`MIN_ENGLISH_SHARE` Woven-Thanglish tripwire**; "most-Tamil voice" check | Prompts rewritten as above. The tripwire is a **hard seam**, see §4.5 |
-| `knock_reply.py`, `reply_common.py`, `morning_knock.py`, `render_rotation.py` (`"who": "anna"`), `suggest_targets.py`, `sync_state.py` | Identifiers and strings: Andrew/Anna (≈200 refs), trip | Mechanical renaming (`tutor`, `learner`) |
-| `sync_state.py` | One-shot repair lists of Tamil rows | **Drop.** These are personal migrations |
-| `year.py` | Trip cycle; phases down/across/up/taper/trip/harvest | **Optional module.** It depends on the stake having a date. The register ladder (down → across → up) generalizes, for example French *tu*/*vous*, and the ladder names come from `language.md` |
-| `household.py` | Path and section names | Rename `world.py`. Otherwise generic |
+| `knock_reply.py`, `reply_common.py`, `morning_knock.py`, `render_rotation.py` (`"who": "anna"` in `SHAPE_CLAUSES`), `suggest_targets.py` | Identifiers and strings: Andrew/Anna (≈200 refs), trip | Mechanical renaming (`tutor`, `learner`) |
+| `sync_state.py` (1,521) | The only state writer: `update`, `check` (the Receptive Check), `month`, `year`, `slips`, `knock-response`, `rate-episode`, `feedback`, `add-word`/`add-pattern`. Carries Tamil-script help text and examples, and migrations of Andrew's retired state (`RETIRED_LEARNER_KEYS`, `FOREIGN_BOOKS`) | **Port; it's core.** Rename, swap examples for pack placeholders, and drop only the migrations of retired personal state. `seed-deck` goes with the deck (§4.3) unless W4 intake needs it. It's the largest file in core, so it is the first test of the 8k budget |
+| `year.py` | Trip cycle. `ORDER` = excavation, down, across, up, taper, trip, harvest, with fixed lengths; state keys `trip_from`/`trip_to` | **→ `timeline.py`; the phases become data (D8).** The mechanism stays fixed: the phase record (`direction`, `voices`, `situation_given`, `intake`, `marker`), the which-phase-is-today lookup, and the rule that a marker is behavioural and involves a real human. The phase list, names and lengths are written by setup from the learner's stake and date. Andrew's year is the worked example, not a default. The `sync_state year` subcommand follows the rename |
+| `household.py` | Path and section names; the cast's target-script spelling is parsed and is load-bearing (an eavesdrop tape is refused unless a cast member's target-form name is in it) | Rename `world.py`. The name match is the referent axis (§4.5): it matches the declared canonical-form name, not a script test |
 | `backfill_observations.py`, `render_demo.py` | 09-10 ledger cutover; showcase demos | **Leave behind** |
 
-**Mechanism that ports with renaming and comment-stripping only:** `state_io`,
+**Mechanism that ports with renaming and comment-stripping only:**
 `observations`, `lexicon_view`, `slips`, `session_brief`, `show_status`,
-`suggest_targets`, `generate_callbacks`, `month`, `dose_evidence`, `writer` (minus
-constants), `publish`, `rebuild_rss`, `render_audio`, `memo`, `lanes`, `audio_titles`,
-`render_soak`, `render_drill`, `render_rotation`, `lesson_audio`, `receptive_check`,
-`render_sort`, `render_payoff`, `push_queue`, `knock_message`, `commissions`,
-`render_chat`, `rails` (minus constants).
+`generate_callbacks`, `month`, `dose_evidence`, `publish`, `rebuild_rss`, `memo`,
+`lanes`, `audio_titles`, `render_soak`, `render_drill`, `render_rotation`,
+`lesson_audio`, `receptive_check`, `push_queue`, `knock_message`, `commissions`,
+`render_chat`, `rails` (minus constants), `smoke_test` (the runner; the cases are
+rebuilt in W5).
+
+**Mechanism that ports with a seam change (D5).** Each of these files tests for the
+target script directly, so a Latin-script target changes its behaviour, not just its
+names. Each file swaps a script test for a pack accessor:
+
+| File | Today's test | What it's asking |
+|---|---|---|
+| `state_io` | `is_tamil` in `resolve` | Is this token a lexicon key? (canonical form) |
+| `writer` (minus constants) | `TAMIL_RUN` in `to_phonetic` | Does this text need a read-form rewrite? (identity when read = voice) |
+| `render_audio` | `is_tamil` on new words | Is this a target word? |
+| `render_sort`, `render_payoff` | `TAMIL_RE.search` | Is this key or echo target language? |
+| `suggest_targets` | `strip_pulli` | What's the stem? |
+| `run_studio` | `MIN_ENGLISH_SHARE`, most-target voice | How much is L1? (the weave tripwire, §4.5) |
+
+These accessors land in tamil-tutor first (D12).
 
 ### 4.3 Everything else
 
@@ -186,14 +216,14 @@ constants), `publish`, `rebuild_rss`, `render_audio`, `memo`, `lanes`, `audio_ti
 | `.claude/agents/studio.md` | Names | Port |
 | *(new)* `.claude/skills/setup` | — | From v5, updated to §6 |
 | `.github/workflows/anna.yml` | `ANNA_PUSH_WEBHOOK_URL`, "Judge Tamil reply", personal cron | → `tutor.yml`. Secrets become `PUSH_WEBHOOK_URL`, `OPENROUTER_API_KEY`, `GCP_SA_KEY`. Skips when unbootstrapped or when a module is off. Cron is commented out until setup |
-| `docs/DECISIONS.md` (365 lines, 185 "Andrew") | Dated personal history | **Distill** into a template seed of universal decisions, one line each. The instance appends its own |
+| `docs/DECISIONS.md` (384 lines, 195 "Andrew") | Dated personal history | **Distill** into a template seed of universal decisions, one line each. The instance appends its own |
 | `docs/PROTOCOL_MAP.md` | Tamil instantiation narrative | **Port** as the architecture map without the history |
 | `docs/JOURNEY`, `ASTRA_CHARGE`, `ASTRA_REVIEW`, `comprehension_plan`, `learning_week`, `feature_inbox`, `home_assistant_knock_buttons`, `shortcuts/*.shortcut` | Personal | **Leave behind.** `WORKED_EXAMPLE.md` gets a fresh rewrite. `phone_loop.md` gets a fresh generic write-up, with HA as one worked receiver |
 | `content/` (lessons, scripts, captions, art, articles, cheatsheets), `published_audio/`, `audio/`, `rss.xml`, `logo.jpg` | Personal | **Never ship.** The only exception is `content/world.md.template` |
 | `progress/*` | Personal | Ship only `*.json.example` + `profile.md.template` |
 | `curriculum/word_pool.json` (534 Tamil-script hits), `trip_deck.json` | Tamil | `word_pool.json.example` (schema); the setup agent synthesizes the pool. The deck is left out of v6.0 (tamil-tutor retired its container) |
 | `BOOTSTRAP.md` | Tamil-flavoured bootstrap + the "What Generalizes" layer map | Superseded by `SETUP.md`. The layer map becomes `CUSTOMIZATION.md` |
-| `scripts/smoke/` (126 cases) | Fixtures are Andrew + Tamil script throughout | **Rebuild** (§7, W5) |
+| `scripts/smoke/` (128 cases) | Fixtures are Andrew + Tamil script throughout | **Rebuild** (§7, W5) |
 
 ### 4.4 Learner-pack concepts: Andrew's version → general slot
 
@@ -202,7 +232,7 @@ constants), `publish`, `rebuild_rss`, `render_audio`, `memo`, `lanes`, `audio_ti
 | The heist: a secret reveal to his wife | **Stake.** What mastery climaxes into (reveal / trip / exam / move / heritage). Secrecy is optional → `stake.md` |
 | The wife as Oracle | **Informant policy.** Who the native resource is (none is a valid answer), and the rule that they are never an examiner → `stake.md` |
 | "Family already, language not yet" | **Standing facts** → `user.md` |
-| August 2027 trip, `year.py` phases | **Anchor date** (optional) → `learner.json.year`. No date means no year module |
+| August 2027 trip, `year.py` phases | **Timeline:** the stake's date and the phases leading to it, elaborated in the interview (a wedding in a month and a trip in a year get very different plans) → `config.timeline` (phases) + `learner.json.timeline` (dates and progress). No date means no timeline module |
 | The Coimbatore household (Paati … Ravi) | **World:** a fictional recurring cast in the target region, with pinned voices and a register ladder across ages → `world.md`. **The learner approves the cast** before anything uses it |
 | Lunch session + separate ear block | **Daily deal** → `learner_contract.md` |
 | 3 reaches/day, 08–21 local | **Rails** → `config.rails` |
@@ -227,7 +257,7 @@ languages.
 | **The Weave** | Code-switching with English is native, so English nouns are authentic | Dutch, French (sentence-boundary weave); some regional varieties partly flip back | **Interview derivation** → `language.md` + `weave_rule` fragment. The English-share tripwire reads the derived rule |
 | **Word boundaries / counting** | Space-delimited words; meters count words | Chinese, Japanese, Thai (no spaces) | Meters count **declared spans**, not whitespace tokens. A pack slot names the tokenization rule |
 | **Inflection tolerance** | Agglutinative stem + vowel-sign tail (`TAMIL_TAIL_RE`, `strip_pulli`) | Fusional (French elision, Spanish conjugation), isolating (Chinese: none), other agglutinative (Korean, Turkish: different tails) | **Interview elaboration** → `stem` rule in the pack (regex, suffix list, or null = verbatim) |
-| **Register ladder** | `-nga` politeness; year phases down → across → up | Korean speech levels, Japanese keigo, French *tu/vous*, near-flat English-like registers | `language.md` names the ladder's rungs; `year` phases and world cast map onto them. One rung is valid |
+| **Register ladder** | `-nga` politeness; year phases down → across → up | Korean speech levels, Japanese keigo, French *tu/vous*, near-flat English-like registers | `language.md` names the ladder's rungs; timeline phases and the world cast map onto them. One rung is valid |
 | **Referents & kinship** | 26 Tamil kinship nouns name a tape's subject | Korean age/gender-relative terms; languages that prefer names over kin terms | `referent_nouns` is pack data; `world.md` gives each cast member a canonical-form name |
 | **Diglossia** | Spoken Coimbatore vs literary Tamil; the dialect pass rewrites | Arabic, Malayalam, Swiss German strongly; French mildly (*ne* dropping) | `dialect.md` is always synthesized; its weight depends on the gap |
 | **Script direction & rendering** | LTR; known font fallbacks (the Grantha tofu note) | Arabic, Hebrew (RTL captions and notifications) | Caption and notification renderers take direction from the pack. **Untested until a port needs it** |
@@ -256,16 +286,26 @@ progress/*.example, progress/profile.md.template
 The invariant tamil-tutor earned, *one file answers "what does a port change?"*, carries
 over: **`config/tutor.json` + the `.template` list *is* the port surface.** A ratchet
 asserts that no mechanism file contains the target script, a learner name, or a
-config-owned literal. These are the descendants of `s70` and `s91`.
+config-owned literal. These are the descendants of three guards: `s70`'s needle check
+(every pack value has one home), `s91` (no language fact outside the pack) and `s93`
+(the prose port-surface list names real files).
+
+**The script sweep only bites on a distinct-script fixture.** For a Latin-script target,
+"no mechanism file contains the target script" can't be checked, and a fact about the
+language written in Roman letters is invisible to it anyway (`s93`'s finding: the
+`-nga` ending, "Woven Thanglish"). So the ratchet runs against the distinct-script W1
+fixture. Names and config literals are checked as needles for any language. Facts
+about the language written in prose are held by the port-surface file list, never by
+a regex.
 
 ### 5.2 Modules
 
 | Module | Contents | Default |
 |---|---|---|
-| **core** | session (skill + protocol), state + ledger + lexicon view, ticket + callbacks + slips, world + month, receptive check, status/brief | always on |
+| **core** | session (skill + protocol), state + ledger + lexicon view, ticket + callbacks + slips, world + month, receptive check, **the sweep's planner** (`render_sort --plan-only` today), status/brief | always on |
 | **audio** | `render_audio`, `memo`, soak, rotation, drill, `lesson_audio`, studio (`run_studio` + subagent), RSS feed | on if TTS is configured |
-| **phone** | knock, reply/open-ask/message lanes, rails, push queue, commissions, payoff, sort tape, workflow ticks | off until setup wires a receiver |
-| **year** | `year.py` phases | on only if the stake has a date |
+| **phone** | knock, reply/open-ask/message lanes, rails, push queue, commissions, payoff, sort tape (the rendered tape; its planner is core), workflow ticks | off until setup wires a receiver |
+| **timeline** | `timeline.py` phases toward the stake's date | on only if the stake has a date |
 
 `config.modules` holds these flags. A module that is off makes its workflow step skip
 green.
@@ -275,10 +315,12 @@ green.
 - **Comments state the rule, not the history.** A docstring has one paragraph: what it
   owns, what it doesn't, and the invariant. No dates, no names, no incident narratives.
   Lineage is one line, `docs/LINEAGE.md` → tamil-tutor tag.
-- **Proposed budgets (ratchet-enforced from day one).** These are open, see D10. Core
-  Python ≤ 8k lines, audio ≤ 4k, phone ≤ 4k, smoke ≤ 5k, fixed protocol prose ≤ 9k words.
-  For reference, tamil-tutor today is 16.8k + 14.7k lines and 14.3k words, and v5 was
-  6.9k lines.
+- **Budgets (ratchet-enforced from day one).** Settled as proposed (D10) and re-counted
+  after W2. Core Python ≤ 8k lines, audio ≤ 4k, phone ≤ 4k, smoke ≤ 5k, fixed protocol
+  prose ≤ 9k words. For reference, tamil-tutor today is 16.8k + 15.0k lines and 14.7k
+  words, and v5 was 6.9k lines.
+- **`PROHIBITION_BUDGET` carries over** (§3 item 11). Its census is re-taken on the
+  template's own prose, not inherited (tamil-tutor: 195).
 - **Every carried-over feature names its tamil-tutor evidence in one line in
   `DECISIONS.md`.** Anything without evidence stays behind.
 
@@ -291,9 +333,9 @@ The v5 phases stay. The changes below bring them in line with the current archit
 | Phase | v6 change |
 |---|---|
 | 0 Preflight | Detect the executor (`claude` on PATH?), Python version, `gcloud`/`edge-tts` |
-| 1 Interview | Add these to v5's set: **standing facts** (→ `user.md`), **daily deal** (session anchor + ear block → `learner_contract.md`), **cost ceiling**, **notification receiver** (or none), **anchor date** (optional), **whose speech, concretely** (a region and the people the learner actually hears, never just a language name), and the **§4.5 axes** as derivations the agent proposes and the learner confirms. Stay conversational: 3–4 rounds |
+| 1 Interview | Add these to v5's set: **standing facts** (→ `user.md`), **daily deal** (session anchor + ear block → `learner_contract.md`), **cost ceiling**, **notification receiver** (or none), **the stake's timeline** (optional: the date, and what the run-up, the event and any after should be — the agent proposes phases and the learner confirms), **whose speech, concretely** (a region and the people the learner actually hears, never just a language name), and the **§4.5 axes** as derivations the agent proposes and the learner confirms. Stay conversational: 3–4 rounds |
 | 2 Derive | Weave + Modality letters → `language.md` + `config.language` + **example slots** for the mandates. Verify voices exist by listing them; never guess IDs |
-| 3 Synthesize | persona, user, stake, learner_contract, dialect, **world** (place, 5–7 cast across the register ladder, a pinned voice each, standing facts; **the learner approves the cast**), word pool (150–250 spoken-form glue entries) |
+| 3 Synthesize | persona, user, stake, learner_contract, dialect, **world** (place, 5–7 cast across the register ladder, a pinned voice each, standing facts; **the learner approves the cast**), word pool (150–250 spoken-form glue entries), `exemplars.md` seed (D14), the **timeline** phases if the stake has a date (D8) |
 | 4 Init state | Copy the `.example` files; `profile.md` with the Calibration Notes dials; no arc yet. The first session writes it |
 | 5 Intake | Seed recognized items as `untested`, then run a short **Receptive Check** in which the learner answers meanings. Never a self-claimed rung. Skip for beginners |
 | 6 Wire | Git remote (public vs private trade-off for the feed), `.env`, Actions secrets, uncomment cron for enabled modules, rename the `/tutor` skill, shed the welcome media |
@@ -305,13 +347,13 @@ The v5 phases stay. The changes below bring them in line with the current archit
 
 | # | Workstream | Done when |
 |---|---|---|
-| W0 | **Freeze and clear.** Tag tamil-tutor `template-v6-source`. Tag this repo's current main `template-v5`. In one commit, clear the tree down to the kept files | Both tags pushed; tree contains only README, LICENSE, welcome media, this spec |
-| W1 | **Pack contract.** `config/tutor.json` schema + `pack.py` + the template list + the §4.5 seam decisions | Schema doc'd in `CUSTOMIZATION.md`; two fixture configs validate: a **distinct-script** pack (Tamil-shaped) and a **shared-script** pack (the v5 Spanish example). Every §4.5 slot has a documented null |
+| W0 | **Freeze and clear.** Tag tamil-tutor HEAD `template-v6-source` (no earlier than `da209f2`) and re-take this spec's census there. Tag this repo's current main `template-v5`. In one commit, clear the tree down to the kept files | Both tags pushed; census figures match the tag; tree contains only README, LICENSE, welcome media, this spec |
+| W1 | **Pack contract.** `config/tutor.json` schema + `pack.py` + the template list + the §4.5 seam decisions, including the role-named accessors of §4.2's seam-change table (landed in tamil-tutor first, D12) | Schema doc'd in `CUSTOMIZATION.md`; two fixture configs validate: a **distinct-script** pack (Tamil-shaped) and a **shared-script** pack (the v5 Spanish example). Every §4.5 slot has a documented null |
 | W2 | **Mechanism port**, bottom-up by layer (`pack` → `state_io` → ledger → selection → writer → publish → lanes). Rename, de-Tamil, strip history | Ratchet: zero learner names / target script / config literals in mechanism files; import-direction guard green |
 | W3 | **Prose port.** Fixed protocol files neutralized; templates written with (fixed)/(synthesize) sections; mandates and studio prompts slotted | Each template has a guidance block and a worked pointer; prose budgets set |
 | W4 | **Setup protocol.** `SETUP.md` + `skills/setup` per §6 | A dry run on a blank clone reaches Phase 7 |
 | W5 | **Tests.** A new, small smoke suite run against both fixtures, plus a blank-clone case | Green on both; blank clone green; cases cover the ledger law, rails, the referent rule, modality on/off, weave branches |
-| W6 | **Docs.** `WORKED_EXAMPLE.md` (October Tamil: comprehension pivot, world, ledger), `CUSTOMIZATION.md`, `PROTOCOL_MAP.md`, `DECISIONS.md` seed, `phone_loop.md`, README edits | A reviewer can find every dial from `CUSTOMIZATION.md` |
+| W6 | **Docs.** `WORKED_EXAMPLE.md` (October Tamil: comprehension pivot, world, ledger, the year as one worked timeline), `CUSTOMIZATION.md`, `PROTOCOL_MAP.md`, `DECISIONS.md` seed, `phone_loop.md`, README edits | A reviewer can find every dial from `CUSTOMIZATION.md` |
 | W7 | **Workflows.** `tutor.yml` + `smoke.yml`; module-aware skips | Blank fork: Actions green with no secrets |
 | W8 | **Acceptance.** (a) A live cold setup by a new learner (the teammate's French is the first), through a first session and one rendered dose. (b) A paper round-trip: fill the template's slots from Andrew's facts and diff against tamil-tutor's protocol. Every Tamil-instance file must be reachable from a slot | (a) the teammate runs session 2 unassisted; (b) no unmapped Tamil surface remains, or each gap is logged as a known v6.1 item |
 
@@ -333,6 +375,10 @@ milestones map onto the v6 seam.
 | D7 | **tamil-tutor's health comes first.** It adopts nothing from the template until the template is proven. W8(b) is a paper test only |
 | D10 | **Size budgets** as proposed in §5.3. Re-census after W2 and set them in the same diff |
 | — | **Weave, inflection tolerance, register ladder and the other §4.5 axes are interview elaborations**, never template defaults |
+| D8 | **The timeline is an interview elaboration.** `year.py` becomes `timeline.py`: fixed mechanism, phases as data. Setup writes the phases from the learner's stake and date, so a wedding next month and a trip next year each get their own plan. Andrew's year (audit → down → across → up → taper → trip → harvest) appears in `WORKED_EXAMPLE.md`, never as a default |
+| D12 | **Role-named accessors land in tamil-tutor before W1.** `is_canonical`, `has_target`/`target_runs` and `stem` replace the raw script tests, so W2 renames these lanes instead of redesigning them. D7 still applies: it has to be a net win for tamil-tutor on its own |
+| D13 | **Prompt fragments: `audio_form`, `chat_form`, `weave_rule`.** `register_note` is dropped and `dialect.md` owns the register default, matching tamil-tutor's 2026-10-05 change. `weave_rule` stays because the English-share tripwire needs a value to read |
+| D14 | **`exemplars.md` ships a fixed frame plus a short neutral seed** of 2–3 contrasting *kinds* of day (an ask, a teardown, a commission), with no learner in them. Setup marks it provisional, and the tutor replaces seed entries with the learner's own days as they happen, keeping 4–5 that contrast |
 
 **Open (each has a recommendation)**
 
@@ -341,9 +387,8 @@ milestones map onto the v6 seam.
 | D3 | Pack form | **JSON config + a `pack.py` reader.** The setup agent writes data, not Python, and the "one file" property survives |
 | D4 | Module boundaries (§5.2) | As drafted. Phone loop **off** by default |
 | D6 | Notification receiver | A generic webhook contract. Document **ntfy** as the zero-infrastructure default and **Home Assistant** as the worked example. The learner's agent asks what they run |
-| D8 | Year module in v6.0? | **Ship it as optional**, on only when the stake has a date |
 | D9 | README | Keep the frame, the name story and the video. Rewrite the status banner, the pedagogy section (comprehension-led, not floor) and the repo map |
-| D11 | Example slots in mandates: how many? | **≤ 8**, named by function. More than that means the prompt is carrying language law, and that belongs in `language.md` |
+| D11 | Example slots in mandates: how many? | **≤ 8**, named by function. More than that means the prompt is carrying language law, and that belongs in `language.md`. These are single lines that show the target form (a repair line, a recast). They are not past sessions used as models, so tamil-tutor's *exemplars, not templates* rule (§3 item 11) doesn't apply to them |
 
 ## 9. Risks
 
