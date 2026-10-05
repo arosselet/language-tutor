@@ -365,7 +365,7 @@ milestones map onto the v6 seam.
 
 ## 8. Decisions
 
-**Settled (Andrew, 2026-10-05)**
+**Settled (Andrew, 2026-10-05).** All decisions are settled; none are open.
 
 | # | Decision |
 |---|---|
@@ -379,16 +379,12 @@ milestones map onto the v6 seam.
 | D12 | **Role-named accessors land in tamil-tutor before W1.** Done 2026-10-05 (`43525f5`): `is_canonical`, `has_target`/`target_runs`, `stem` and `host_stem` replace the raw script tests, so W2 renames these lanes instead of redesigning them |
 | D13 | **Prompt fragments: `audio_form`, `chat_form`, `weave_rule`.** `register_note` is dropped and `dialect.md` owns the register default, matching tamil-tutor's 2026-10-05 change. `weave_rule` stays because the English-share tripwire needs a value to read |
 | D14 | **`exemplars.md` ships a fixed frame plus a short neutral seed** of 2–3 contrasting *kinds* of day (an ask, a teardown, a commission), with no learner in them. Setup marks it provisional, and the tutor replaces seed entries with the learner's own days as they happen, keeping 4–5 that contrast |
+| D3 | **Pack form: JSON config + a fixed `pack.py` reader.** Setup writes data, never Python. Rules that need logic are expressed as data (a regex, a suffix list, or null = verbatim); a language that outgrows that adds a row to §4.5, not a hook file |
+| D4 | **Modules as drafted (§5.2).** Core always on; audio on when a TTS voice is configured; timeline on when the stake has a date; **phone off by default**, offered at Phase 6 |
+| D6 | **Notification receiver: a generic webhook contract** (POST a small JSON body). **ntfy** is the documented zero-infrastructure default and **Home Assistant** the worked example. Setup asks what the learner already runs |
+| D9 | **README: keep the frame, the name story and the video.** Rewrite the status banner, the pedagogy section (comprehension-led, not floor) and the repo map in W6 |
+| D11 | **Example slots in mandates: at most 8**, named by function (repair line, recast, pattern tease, …), written by setup in the target language. Needing more means the prompt is carrying language law, which belongs in `language.md`. These are single lines showing the target form, not past sessions used as models, so *exemplars, not templates* (§3 item 11) doesn't apply |
 
-**Open (each has a recommendation)**
-
-| # | Decision | Recommendation |
-|---|---|---|
-| D3 | Pack form | **JSON config + a `pack.py` reader.** The setup agent writes data, not Python, and the "one file" property survives |
-| D4 | Module boundaries (§5.2) | As drafted. Phone loop **off** by default |
-| D6 | Notification receiver | A generic webhook contract. Document **ntfy** as the zero-infrastructure default and **Home Assistant** as the worked example. The learner's agent asks what they run |
-| D9 | README | Keep the frame, the name story and the video. Rewrite the status banner, the pedagogy section (comprehension-led, not floor) and the repo map |
-| D11 | Example slots in mandates: how many? | **≤ 8**, named by function. More than that means the prompt is carrying language law, and that belongs in `language.md`. These are single lines that show the target form (a repair line, a recast). They are not past sessions used as models, so tamil-tutor's *exemplars, not templates* rule (§3 item 11) doesn't apply to them |
 
 ## 9. Risks
 
