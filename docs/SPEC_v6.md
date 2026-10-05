@@ -1,6 +1,6 @@
 # Sollu v6 — Fresh Extraction Spec
 
-> **Status:** W0–W6 done 2026-10-05. W7 (workflows) and W8 (acceptance) in progress.
+> **Status:** W0–W7 and W8(b) done 2026-10-05 (§10). W8(a), a live cold setup by a new learner, is open.
 > **Source:** `tamil-tutor` at `43525f5` (2026-10-05), tagged `template-v6-source`: the
 > first commit that carries all three landed §0 seams and the 10-05 pedagogy changes
 > (§3 item 11). The census figures below were re-taken at the tag (W0).
@@ -400,3 +400,45 @@ milestones map onto the v6 seam.
 - **Cost surprises for a new learner.** Mitigation: the cost ceiling is an interview item,
   setup maps it to writer and TTS choices, and `show_status` prints the month's spend
   when that's available.
+
+---
+
+## 10. Acceptance record
+
+**W7 (2026-10-05).** `smoke.yml` passed on GitHub on the blank template with no secrets
+(run 37357650737: actionlint, then the blank, Tamil and Spanish suites). `tutor.yml`
+passed actionlint and drew no validation failure. Its dispatch path was checked locally
+(blank → `ready=false`; the Spanish pack → audio on, phone and timeline off), but it has
+not run in Actions yet. Its first run is setup's Phase 7.
+
+**W8(b), the paper round-trip (2026-10-05).** Every Tamil-instance surface at
+`template-v6-source` is reachable from a slot:
+
+| tamil-tutor surface | v6 home |
+|---|---|
+| `persona.md`, `user.md`, `learner_contract.md`, `dialect.md`, `exemplars.md` | the slot of the same name. Sections map one to one; dialect's seven merge into six |
+| `heist.md` + the constitution's goal line and informant section | `stake.md` (The Stake, The Secret, Native Resources, The Ops) |
+| The constitution's dialect strictness, Woven Thanglish, phonetic acceptance, surface split, lore veins | `language.md` (register, weave, modality, lore) + `config.language` |
+| `content/household.md`, the analysts in `hosts.md` | `content/world.md` |
+| The studio's dialect test, the Kongu layer, the reference ear | `dialect.md` (the test line, The Regional Layer) |
+| Tamil worked examples in the mandates | `config.examples` (the D11 slots) |
+| `language.py`, `household.py`, `year.py` | `pack.py` + config, `world.py`, `timeline.py` |
+| `curriculum/word_pool.json`, `progress/profile.md` | `.example` / `.template` |
+| `backfill_observations.py`, `render_demo.py`, `trip_deck.json`, the personal docs | left behind (§4.2, §4.3) |
+
+**One gap was found and closed in the same diff:** the exemplars seed carried three kinds
+of day against the file's own "four or five", and tamil-tutor's fourth kind (a familiar
+shape after a gap) is universal. It is now seed 4. **Known v6.1 items:** none from the
+mapping. Acceptance residue:
+
+- W8(a) is open: a live cold setup by a new learner.
+- A right-to-left script is untested (`CUSTOMIZATION.md` §4.5 row).
+- `tutor.yml` has not yet run in Actions.
+
+**Found in tamil-tutor and reported, not fixed (D7):**
+
+- M94's first line is the Voice Map comment, so the feed titles it by filename.
+- `content/household.md`'s beat log is never committed, because `render_audio`'s commit
+  list omits it.
+- `render_payoff --dry-run` counts a try and commits a refusal.
+- `anna.yml` inlines two dispatch payload values into `run:`.
