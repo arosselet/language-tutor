@@ -628,6 +628,9 @@ async def main():
             Path("published_audio") / os.path.basename(args.output_file),
             Path("content/lessons") / f"{stem}_brief.md",
             Path("content/captions") / f"{stem}.md",
+            # The beat the studio appended to the canon: continuity rides the
+            # episode's own commit, or the world remembers nothing in git.
+            Path("content/world.md"),
             Path(args.input_file),
             Path(args.input_file).with_suffix(".tags.json"),
         ]
