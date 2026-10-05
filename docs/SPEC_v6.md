@@ -1,9 +1,9 @@
 # Sollu v6 — Fresh Extraction Spec
 
 > **Status:** specification only, 2026-10-05. Nothing is implemented yet.
-> **Source:** `tamil-tutor` at `da209f2` (2026-10-05), the first commit that carries both
-> landed §0 seams and the 10-05 pedagogy changes (§3 item 11). The census figures below
-> are from that commit. W0 tags tamil-tutor HEAD as `template-v6-source` and re-takes the
+> **Source:** `tamil-tutor` at `43525f5` (2026-10-05), the first commit that carries all
+> three landed §0 seams and the 10-05 pedagogy changes (§3 item 11). The census figures
+> below were taken at `da209f2`, one commit earlier. W0 tags tamil-tutor HEAD as `template-v6-source` and re-takes the
 > census there, because the source ships daily.
 > **Replaces:** the v5 tree of this repo (`template-v5-source`, 2026-07-27). Only
 > `README.md` (with its embedded video), `LICENSE`, and the welcome media are kept.
@@ -22,7 +22,7 @@ the extraction copies a clean seam instead of inventing one.
 |---|---|---|---|
 | **Landed 2026-10-05** | The surface rule (how speakable and readable Tamil are written) was restated in 9 prompt sites and had drifted three ways on register. It is now `language.VOICE_FORM` / `READ_FORM`, spliced everywhere; `dialect.md` keeps the register default; `s129` fails on a retyped rule | One sentence to change, no more drift | `language.audio_form` / `chat_form` |
 | **Landed 2026-10-05** | Stored romanizations (`lexicon.phonetic`) are deleted; keys are script and every surface he reads is generated (`writer.to_phonetic`), including the sort-tape push-back. This removes a false "recently shown" match (substring hits like `om` in "from") | Honest cold credit; less code (state_io 127 → 111) | Nothing to template. The read form is generated, never stored, for any language |
-| **Approved (D12), lands before W1** | Eight mechanism files import raw script tests (`is_tamil`, `TAMIL_RE`, `TAMIL_RUN`, `TAMIL_TAIL_RE`, `strip_pulli`) to answer three different questions: 41 references, counting the declarations in `language.py`. They include the ledger's own key lookup (`state_io.resolve`). Role-named accessors (`is_canonical`, `has_target`/`target_runs`, `stem`) would make each lane name its question | Clearer lanes, a simpler `s91` | The plug point for *declare, don't detect* (§4.5). Without it, W2 has to redesign these six lanes while it ports them (§4.2) |
+| **Landed 2026-10-05** (`43525f5`, D12) | Eight mechanism files imported raw script tests (`is_tamil`, `TAMIL_RE`, `TAMIL_RUN`, `TAMIL_TAIL_RE`, `strip_pulli`) to answer three different questions, including the ledger's own key lookup (`state_io.resolve`). Lanes now import role-named questions with the same answers: `is_canonical`, `has_target`/`target_runs`, `stem`, and `host_stem` (narrower than `stem` on purpose, for substring host-finding). `s91` fails on a range name in a lane | Each lane names its question; a planted range import goes red | The plug point for *declare, don't detect* (§4.5). Without it, W2 has to redesign these six lanes while it ports them (§4.2) |
 | Not worth doing | Renaming `Anna`/`Andrew` identifiers, log strings and the `ANNA_PUSH_WEBHOOK_URL` secret | Churn and an outward-facing secret change for no learning benefit | Mechanical rename at W2 |
 
 ---
@@ -161,7 +161,7 @@ config keys. **Personal/infra** never ships.
 
 | Fact | Lives today | v6 home |
 |---|---|---|
-| Script detection `TAMIL_RE` / `TAMIL_RUN` / `TAMIL_TAIL_RE`, `is_tamil`, `strip_pulli` | `language.py` | `config` → `language.script_regex` (nullable) + `language.stem_tail_regex` (nullable). `pack.py` exposes `is_canonical()`, `target_spans()`, `stem()` |
+| Script detection `TAMIL_RE` / `TAMIL_RUN` / `TAMIL_TAIL_RE`, `is_tamil`, `strip_pulli` | `language.py` | `config` → `language.script_regex` (nullable) + `language.stem_tail_regex` (nullable). `pack.py` exposes the questions tamil-tutor's lanes already ask: `is_canonical()`, `has_target()`, `target_runs()`, `stem()`, `host_stem()` |
 | `REFERENT_NOUNS` (26 Tamil kinship terms) | `language.py` | `config` → `language.referent_nouns` (synthesized) |
 | `ANNA_VOICE`, `EAVESDROP_VOICE`; episode voice pools | `language.py`; `render_audio._CHIRP_POOL_*` | `config` → `tts.tutor_voice`, `tts.eavesdrop_voice`, `tts.pools`. Cast pins stay in `world.md` |
 | `REPO`, `FEED_TITLE` ("Coimbatore Mappillai"), `FEED_SUMMARY`, `CAPTION_COLUMNS` | `language.py` | `config` → `feed.*` |
@@ -202,7 +202,7 @@ names. Each file swaps a script test for a pack accessor:
 | `suggest_targets` | `strip_pulli` | What's the stem? |
 | `run_studio` | `MIN_ENGLISH_SHARE`, most-target voice | How much is L1? (the weave tripwire, §4.5) |
 
-These accessors land in tamil-tutor first (D12).
+These accessors landed in tamil-tutor on 2026-10-05 (D12), so in W2 these lanes port as renames and the seam work is in `pack.py`'s answers.
 
 ### 4.3 Everything else
 
@@ -347,7 +347,7 @@ The v5 phases stay. The changes below bring them in line with the current archit
 
 | # | Workstream | Done when |
 |---|---|---|
-| W0 | **Freeze and clear.** Tag tamil-tutor HEAD `template-v6-source` (no earlier than `da209f2`) and re-take this spec's census there. Tag this repo's current main `template-v5`. In one commit, clear the tree down to the kept files | Both tags pushed; census figures match the tag; tree contains only README, LICENSE, welcome media, this spec |
+| W0 | **Freeze and clear.** Tag tamil-tutor HEAD `template-v6-source` (no earlier than `43525f5`) and re-take this spec's census there. Tag this repo's current main `template-v5`. In one commit, clear the tree down to the kept files | Both tags pushed; census figures match the tag; tree contains only README, LICENSE, welcome media, this spec |
 | W1 | **Pack contract.** `config/tutor.json` schema + `pack.py` + the template list + the §4.5 seam decisions, including the role-named accessors of §4.2's seam-change table (landed in tamil-tutor first, D12) | Schema doc'd in `CUSTOMIZATION.md`; two fixture configs validate: a **distinct-script** pack (Tamil-shaped) and a **shared-script** pack (the v5 Spanish example). Every §4.5 slot has a documented null |
 | W2 | **Mechanism port**, bottom-up by layer (`pack` → `state_io` → ledger → selection → writer → publish → lanes). Rename, de-Tamil, strip history | Ratchet: zero learner names / target script / config literals in mechanism files; import-direction guard green |
 | W3 | **Prose port.** Fixed protocol files neutralized; templates written with (fixed)/(synthesize) sections; mandates and studio prompts slotted | Each template has a guidance block and a worked pointer; prose budgets set |
@@ -376,7 +376,7 @@ milestones map onto the v6 seam.
 | D10 | **Size budgets** as proposed in §5.3. Re-census after W2 and set them in the same diff |
 | — | **Weave, inflection tolerance, register ladder and the other §4.5 axes are interview elaborations**, never template defaults |
 | D8 | **The timeline is an interview elaboration.** `year.py` becomes `timeline.py`: fixed mechanism, phases as data. Setup writes the phases from the learner's stake and date, so a wedding next month and a trip next year each get their own plan. Andrew's year (audit → down → across → up → taper → trip → harvest) appears in `WORKED_EXAMPLE.md`, never as a default |
-| D12 | **Role-named accessors land in tamil-tutor before W1.** `is_canonical`, `has_target`/`target_runs` and `stem` replace the raw script tests, so W2 renames these lanes instead of redesigning them. D7 still applies: it has to be a net win for tamil-tutor on its own |
+| D12 | **Role-named accessors land in tamil-tutor before W1.** Done 2026-10-05 (`43525f5`): `is_canonical`, `has_target`/`target_runs`, `stem` and `host_stem` replace the raw script tests, so W2 renames these lanes instead of redesigning them |
 | D13 | **Prompt fragments: `audio_form`, `chat_form`, `weave_rule`.** `register_note` is dropped and `dialect.md` owns the register default, matching tamil-tutor's 2026-10-05 change. `weave_rule` stays because the English-share tripwire needs a value to read |
 | D14 | **`exemplars.md` ships a fixed frame plus a short neutral seed** of 2–3 contrasting *kinds* of day (an ask, a teardown, a commission), with no learner in them. Setup marks it provisional, and the tutor replaces seed entries with the learner's own days as they happen, keeping 4–5 that contrast |
 
