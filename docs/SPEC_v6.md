@@ -1,10 +1,9 @@
 # Sollu v6 — Fresh Extraction Spec
 
 > **Status:** specification only, 2026-10-05. Nothing is implemented yet.
-> **Source:** `tamil-tutor` at `43525f5` (2026-10-05), the first commit that carries all
-> three landed §0 seams and the 10-05 pedagogy changes (§3 item 11). The census figures
-> below were taken at `da209f2`, one commit earlier. W0 tags tamil-tutor HEAD as `template-v6-source` and re-takes the
-> census there, because the source ships daily.
+> **Source:** `tamil-tutor` at `43525f5` (2026-10-05), tagged `template-v6-source`: the
+> first commit that carries all three landed §0 seams and the 10-05 pedagogy changes
+> (§3 item 11). The census figures below were re-taken at the tag (W0).
 > **Replaces:** the v5 tree of this repo (`template-v5-source`, 2026-07-27). Only
 > `README.md` (with its embedded video), `LICENSE`, and the welcome media are kept.
 > **First real user:** Andrew's teammate, learning French. The spec settles nothing
@@ -162,7 +161,7 @@ config keys. **Personal/infra** never ships.
 | Fact | Lives today | v6 home |
 |---|---|---|
 | Script detection `TAMIL_RE` / `TAMIL_RUN` / `TAMIL_TAIL_RE`, `is_tamil`, `strip_pulli` | `language.py` | `config` → `language.script_regex` (nullable) + `language.stem_tail_regex` (nullable). `pack.py` exposes the questions tamil-tutor's lanes already ask: `is_canonical()`, `has_target()`, `target_runs()`, `stem()`, `host_stem()` |
-| `REFERENT_NOUNS` (26 Tamil kinship terms) | `language.py` | `config` → `language.referent_nouns` (synthesized) |
+| `REFERENT_NOUNS` (25 Tamil kinship terms) | `language.py` | `config` → `language.referent_nouns` (synthesized) |
 | `ANNA_VOICE`, `EAVESDROP_VOICE`; episode voice pools | `language.py`; `render_audio._CHIRP_POOL_*` | `config` → `tts.tutor_voice`, `tts.eavesdrop_voice`, `tts.pools`. Cast pins stay in `world.md` |
 | `REPO`, `FEED_TITLE` ("Coimbatore Mappillai"), `FEED_SUMMARY`, `CAPTION_COLUMNS` | `language.py` | `config` → `feed.*` |
 | Waking window, `MAX_REACHES_PER_DAY`, `MIN_GAP_HOURS` | `rails.py` | `config` → `rails.*` (learner facts) |
@@ -174,7 +173,7 @@ config keys. **Personal/infra** never ships.
 | File | Andrew/Tamil load | v6 approach |
 |---|---|---|
 | `mandates.py` (644 lines, 17 prompt constants + `SHAPE_CLAUSES`) | "You are Anna… Andrew's phone"; Tamil examples (`poren`, `புரியல`, `saapteengala`); Kongu; "Tamil script"; Thanglish | Neutral mechanism prose with `{tutor}`, `{learner}`, `{chat_form}`, `{audio_form}`, `{weave_rule}`, `{register_note}`, and a small set of **example slots** (`examples.repair_line`, `examples.recast`, `examples.pattern_tease`, …). The setup agent writes those in the target language. Examples carry real weight in prompt quality, so they become pack data. We don't delete them |
-| `run_studio.py` (879) | `DIRECTOR`/`ARCHITECT`/`PRODUCER` prompts; **`MIN_ENGLISH_SHARE` Woven-Thanglish tripwire**; "most-Tamil voice" check | Prompts rewritten as above. The tripwire is a **hard seam**, see §4.5 |
+| `run_studio.py` (880) | `DIRECTOR`/`ARCHITECT`/`PRODUCER` prompts; **`MIN_ENGLISH_SHARE` Woven-Thanglish tripwire**; "most-Tamil voice" check | Prompts rewritten as above. The tripwire is a **hard seam**, see §4.5 |
 | `knock_reply.py`, `reply_common.py`, `morning_knock.py`, `render_rotation.py` (`"who": "anna"` in `SHAPE_CLAUSES`), `suggest_targets.py` | Identifiers and strings: Andrew/Anna (≈200 refs), trip | Mechanical renaming (`tutor`, `learner`) |
 | `sync_state.py` (1,521) | The only state writer: `update`, `check` (the Receptive Check), `month`, `year`, `slips`, `knock-response`, `rate-episode`, `feedback`, `add-word`/`add-pattern`. Carries Tamil-script help text and examples, and migrations of Andrew's retired state (`RETIRED_LEARNER_KEYS`, `FOREIGN_BOOKS`) | **Port; it's core.** Rename, swap examples for pack placeholders, and drop only the migrations of retired personal state. `seed-deck` goes with the deck (§4.3) unless W4 intake needs it. It's the largest file in core, so it is the first test of the 8k budget |
 | `year.py` | Trip cycle. `ORDER` = excavation, down, across, up, taper, trip, harvest, with fixed lengths; state keys `trip_from`/`trip_to` | **→ `timeline.py`; the phases become data (D8).** The mechanism stays fixed: the phase record (`direction`, `voices`, `situation_given`, `intake`, `marker`), the which-phase-is-today lookup, and the rule that a marker is behavioural and involves a real human. The phase list, names and lengths are written by setup from the learner's stake and date. Andrew's year is the worked example, not a default. The `sync_state year` subcommand follows the rename |
@@ -216,7 +215,7 @@ These accessors landed in tamil-tutor on 2026-10-05 (D12), so in W2 these lanes 
 | `.claude/agents/studio.md` | Names | Port |
 | *(new)* `.claude/skills/setup` | — | From v5, updated to §6 |
 | `.github/workflows/anna.yml` | `ANNA_PUSH_WEBHOOK_URL`, "Judge Tamil reply", personal cron | → `tutor.yml`. Secrets become `PUSH_WEBHOOK_URL`, `OPENROUTER_API_KEY`, `GCP_SA_KEY`. Skips when unbootstrapped or when a module is off. Cron is commented out until setup |
-| `docs/DECISIONS.md` (384 lines, 195 "Andrew") | Dated personal history | **Distill** into a template seed of universal decisions, one line each. The instance appends its own |
+| `docs/DECISIONS.md` (386 lines, 196 "Andrew") | Dated personal history | **Distill** into a template seed of universal decisions, one line each. The instance appends its own |
 | `docs/PROTOCOL_MAP.md` | Tamil instantiation narrative | **Port** as the architecture map without the history |
 | `docs/JOURNEY`, `ASTRA_CHARGE`, `ASTRA_REVIEW`, `comprehension_plan`, `learning_week`, `feature_inbox`, `home_assistant_knock_buttons`, `shortcuts/*.shortcut` | Personal | **Leave behind.** `WORKED_EXAMPLE.md` gets a fresh rewrite. `phone_loop.md` gets a fresh generic write-up, with HA as one worked receiver |
 | `content/` (lessons, scripts, captions, art, articles, cheatsheets), `published_audio/`, `audio/`, `rss.xml`, `logo.jpg` | Personal | **Never ship.** The only exception is `content/world.md.template` |
