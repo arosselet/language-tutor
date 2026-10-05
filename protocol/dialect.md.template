@@ -1,0 +1,57 @@
+# Protocol: Spoken [Language] — [Variety]
+
+> **SETUP AGENT: this is a synthesis template.** Write the live file to
+> `protocol/dialect.md`; delete every guidance blockquote. This is the most-edited pack file
+> after setup: the learner's native resources will correct it, and every correction lands
+> here. Every rule carries a written-vs-spoken example in the target language. Worked
+> example: `docs/WORKED_EXAMPLE.md` → Dialect (a strongly diglossic language; yours may be
+> close to its written form, and then this file is short).
+
+> **Read by every pass that can emit target language a voice will speak** — through
+> `writer.voice_canon()`, the single owner — and by the studio Producer. A lane that writes
+> speech without this file writes the textbook register, and native listeners hear it at
+> once.
+
+The test for every line: *would someone from [place] say this to a friend?* If it sounds
+like a textbook or a news anchor, it needs work.
+
+---
+
+## Code-Switching Register **(synthesize)**
+
+> Guidance: where a native speaker of this variety naturally reaches for the learner's
+> language (or another language) mid-speech, and where they never would — clause
+> boundaries vs nouns, which domains. This is a description of real speech, distinct from
+> the pedagogical Weave in `language.md`. Name any hybrid forms that do not exist in real
+> speech (a target root with a foreign suffix) and what to use instead.
+
+## Spoken vs Written Forms **(synthesize)**
+
+> Guidance: a table of the commonest written forms and their spoken equivalents in this
+> variety (verb collapses, contractions, dropped negation particles…). 4–10 rows.
+
+| Written | Spoken ([Variety]) |
+|---|---|
+| | |
+
+## Fusion and Elision **(synthesize)**
+
+> Guidance: what fuses or drops in fast speech — word fusion, elided pronouns and particles.
+> Short examples.
+
+## Discourse Markers **(synthesize)**
+
+> Guidance: the fillers, backchannels and repetitions that make a line sound like a person
+> ("yes yes", "listen", "you know?"). Repetition for emphasis is rhythm, not error.
+
+## The Regional Layer **(synthesize)**
+
+> Guidance: what marks *this* variety against its neighbours — suffixes, contractions,
+> regional words — and which cast member is the reference ear for it.
+
+## Register Default **(synthesize)**
+
+> Guidance: the default register of address in this world (formal/informal, the politeness
+> ending and where it may and may not attach), confirmed by a native resource where one
+> exists. State the safe default and when to leave it. Close with the bar: **clear,
+> correct colloquial is the target; hyper-local flourishes are the long game, never the bar.**

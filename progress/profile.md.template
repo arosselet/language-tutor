@@ -1,0 +1,62 @@
+# Learner Profile: [Learner]
+
+> **SETUP AGENT:** copy to `progress/profile.md` at Phase 4, fill the bracketed lines from
+> the interview and the intake, and delete this blockquote. **No arc yet** — the first
+> session writes it. The Calibration Notes are defaults: keep them unless the learner sets a
+> number (every dial is theirs). Live state, edited by the tutor at session close.
+
+## The Goal
+
+[One paragraph from `protocol/stake.md`: what mastery is for, and by when.]
+
+## The Arc — no arc live
+
+> The tutor writes the month's situation here at the first session (`daily_session.md` →
+> The Arc). One block, at most 1,000 words; a finished arc is overwritten and git holds it.
+
+no arc live
+
+## Current Position
+
+- No sessions yet. (Recency in the session log is the honest signal; no streaks.)
+- Starting point: [beginner / recognizer / rusty — from the intake].
+
+## Strengths
+
+- [What the intake showed the learner already has.]
+
+## Active Gaps
+
+- [What the intake showed is thin. Never a list of words — the ticket owns those.]
+
+## What's Needed Next
+
+1. [One or two concrete first moves.]
+
+## Calibration Notes — explicit generation parameters
+
+**Hard dials**, read by the Director and Architect. They live here, not in any agent's
+memory, so every agent applies the same calibration — change the number, not a prompt.
+
+- **Input volume: [10–15] min/day, mostly authored**, counting episodes, soaks, drills,
+  rotation tapes and native media together. The tutor reads it as a floor for **what to
+  commission**, never as a debt; what the learner commits to is
+  `protocol/learner_contract.md`. Re-listening is the design: one tape played across
+  several days counts every time, so a shortfall routes to replays first, then throughput.
+- **Live coverage target: ~95%+ known words in the Intercept *as heard*** — the
+  listening-comprehension floor. Comprehension must hold live.
+- **Eavesdrop carve-out (the ONE exception to 95%).** "Catch the drift" is trained on input
+  the learner doesn't fully understand: a clearly marked eavesdrop segment may run at native
+  speed with well below 95% coverage. The win is who/what/mood, not full comprehension.
+- **Density is an OUTPUT, never a target.** It falls out of fence size × the coverage
+  target. A small fence means heavy scaffolding in the learner's language — correct.
+- **NEW word types: 4–5 (audio) / ≤1–2 (chat).** Each appears 2–3× in answering context.
+  Seeds, not a mastery demand.
+- **Unfenced strangers (neither known nor payload): ≈0.** Hard cap 2, and only when the
+  context answers them in the same beat. More is a Producer send-back.
+- **Naturalness comes from register, not unknown words** — spoken rhythm and idiom built
+  from known vocabulary.
+- **Pacing:** one thought per line; ≥1 `[Pause]` per 6–8 Intercept lines; no run of >5
+  unbroken lines (`architect.md`).
+- **Breakdown:** banter in the learner's language that unlocks the Intercept — colour,
+  never a glossary. The target appears as the quoted snippet, never as the medium.

@@ -1,0 +1,60 @@
+# The Language: [Language] ([Variety]) for a [Native language] speaker
+
+> **SETUP AGENT: this is a synthesis template.** Write the live file to
+> `protocol/language.md` from the interview's derivations (Phase 2). Every letter here has
+> a one-line twin in `config/tutor.json` — the prose explains, the config is what the code
+> reads; keep them saying the same thing. Delete every guidance blockquote. Worked example:
+> `docs/WORKED_EXAMPLE.md` → The language letters.
+
+> **Read by:** the interactive session and the studio (Architect, Producer). Owns the
+> language-shaped decisions the constitution leaves open (SPEC §4.5).
+
+---
+
+## Target Register **(synthesize)**
+
+> Guidance: whose speech, concretely — a region and the people the learner actually hears,
+> never just a language name. One paragraph; the details of the variety live in
+> `dialect.md`.
+
+## The Weave Letter **(synthesize)**
+
+> Guidance: what the learner's language carries and what the target carries, in teaching
+> material. Derive it, don't assume it: where code-switching is native (many South Asian
+> and urban varieties), loaned nouns in the learner's language are authentic and the target
+> carries the load-bearing word; where it is not (most European pairs), switching happens at
+> sentence boundaries and scaffolding stays out of the target sentence. Give one example
+> sentence. Twin: `language.weave_rule`.
+
+## The Modality Letter — read form and voice form **(synthesize)**
+
+> Guidance: how the target is written on a surface the learner READS, and how it must be
+> written for a voice to SPEAK it. For many languages they are the same (twin:
+> `read_rewrite: false`). For a script the learner cannot read at speed, the read form is a
+> romanization and the voice form is the script (`read_rewrite: true`). For writing systems
+> with several layers (kana/kanji, hanzi/pinyin), name exactly which the learner reads.
+> Twins: `language.chat_form`, `language.audio_form`, `script_regex`, `read_rewrite`.
+
+## Telling Target From [Native language] **(synthesize)**
+
+> Guidance: distinct script → detected by `script_regex`. Shared script → declared: audio
+> writers wrap target spans in ⟦ ⟧ (the pack adds that rule to the audio prompts) and the
+> renderer strips them. State which applies, and why.
+
+## Word Boundaries and Inflection **(synthesize)**
+
+> Guidance: spaces or not (`tokenization`); how inflection changes a word's end, as a
+> regex or suffix list (`stem_tail`), and the narrower form a word takes inside a longer
+> phrase (`host_tail`) — or "verbatim" when the language barely inflects.
+
+## The Register Ladder **(synthesize)**
+
+> Guidance: the rungs of address the learner must climb (child, peer, elder; or speech
+> levels; or tu/vous). One rung is a valid answer. Name the rungs; the world's cast and the
+> timeline's directions map onto them (`timeline.directions`).
+
+## Lore Veins **(synthesize)**
+
+> Guidance: 4–6 true story sources this language offers — etymology, words other languages
+> took from it, its cousins and non-cousins, myth, film, cultural logic behind a register.
+> Lore is curriculum (`constitution.md` → Stories Are Curriculum).

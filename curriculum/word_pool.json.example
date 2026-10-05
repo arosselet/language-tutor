@@ -1,0 +1,5 @@
+[
+  {"word": "<canonical key>", "gloss": "That's why / that's the reason", "cluster": "connectors", "priority": 1, "register": "social"},
+  {"word": "<canonical key>", "gloss": "Have you eaten?", "cluster": "hospitality", "priority": 1, "register": "antifreeze"},
+  {"word": "<canonical key>", "gloss": "Never mind, it's fine", "cluster": "repairs", "priority": 2}
+]

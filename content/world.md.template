@@ -1,0 +1,98 @@
+# The World — the canon
+
+> **SETUP AGENT: this is a synthesis template.** Write the live file to
+> `content/world.md`; delete every guidance blockquote. **The learner approves the cast
+> before anything uses it.** Keep the section headings and the cast-table shape exactly:
+> `scripts/world.py` parses them (a name in bold, its target-language form in
+> parentheses, the pinned voice in backticks as the last cell; `## 4. This arc`;
+> `### Beat log` with `*(empty)*`). Worked example: `docs/WORKED_EXAMPLE.md` → The world.
+
+**Fictional. Always.** Nobody here is anyone the learner knows, and no name, role or
+situation is lifted from their real life. A parallel world can be funny, awkward and wrong
+about things, which a portrait of real people cannot.
+
+**Who writes what.** Setup drafts Place, Cast and Standing facts; **the learner approves the
+cast before anything consumes it.** After that the tutor writes the arc premise at the
+month cut, and each rendered episode appends one beat line. The learner overrides anything.
+
+**Budget: 1,200 words.** Canon that outgrows it is compressed at the month boundary — the
+arc's beat log collapses to one past-arc line. The number is never raised to fit more lore.
+
+---
+
+## 1. Place
+
+> Guidance: one specific place in the target region (a street, a building, a village) —
+> the sounds of a morning, who has the afternoon, where the crowded part of the day happens,
+> and the room where things are said that are not for the main room. 80–150 words.
+
+[Write the place.]
+
+---
+
+## 2. Cast
+
+> Guidance: 5–7 recurring people **across the register ladder** in `protocol/language.md`
+> (an elder to address up to, peers to banter across with, a child who tolerates every
+> error and cannot switch languages to be kind). For each: relation, age, and what they are
+> *for* as a listening instrument — older forms, terseness, speed, swallowed endings. Pin
+> one real voice each: setup lists the provider's voices for the language first and never
+> guesses an ID. Give the eavesdrop role to one cast member and pin `tts.eavesdrop_voice` to
+> the same voice. Also name the two Breakdown analysts (`protocol/studio/hosts.md`).
+
+One-offs rotate through freely — a conductor, a seller, a wrong number — and are never canon.
+**Each voice is pinned**: the ear tracks a speaker before it tracks a word.
+**Every name carries its target-language form**: an overheard tape must name who it is about
+in its opening, and the tape is in the target language.
+
+| Person | Relation | Age | What they're for | Voice |
+|---|---|---|---|---|
+| **[Name]** ([target form]) | [relation] | [age] | [the listening instrument] | `[voice-id]` |
+
+**Analysts:** [Name] (F) — sharp, pattern-focused; [Name] (M) — warm, story-focused.
+
+---
+
+## 3. Standing facts
+
+> Guidance: things that are true and that scripts may not contradict — who is married to
+> whom, who lives where, one small ongoing thing per person (a debt, a scooter that won't
+> start). Short on purpose: 5–8 bullets.
+
+- [fact]
+
+---
+
+## 4. This arc
+
+> Written by the tutor at the month cut, replaced each month. Two or three sentences: the
+> situation, what the finale resolves, which everyday domains it exercises. **It never lists
+> words** — the ticket owns those.
+
+**[No arc yet]** — the first session writes it.
+
+### Beat log
+
+> One line per rendered episode, appended after render: what happened. This is the
+> continuity — callbacks are read from here.
+
+*(empty)*
+
+---
+
+## 5. Past arcs
+
+One line each. The detail lives in git.
+
+---
+
+## Notes for whoever writes the next scene
+
+- **Soap-sized, never plot-sized.** Food, plans, who is coming, health, the day just had.
+  Nothing needs resolving; things persist.
+- **Ordinariness is the antidote to hokey.** People with specific small wants and mild
+  irritation. If an arc reads hollow to the learner, that is a signal to log and a premise
+  to re-cut — never a reason to add plot.
+- **Variety comes from the scene-spec gate**, not from the people.
+- **The tutor is not in it.** The tutor talks *about* the world like a show the two of them
+  follow; the fourth wall stays up.

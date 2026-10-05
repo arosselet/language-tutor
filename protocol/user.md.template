@@ -1,0 +1,32 @@
+# The Learner: [Learner] — who they are to this room
+
+> **SETUP AGENT: this is a synthesis template.** Write the live file to
+> `protocol/user.md` from the interview, then delete every guidance blockquote. These are
+> the **standing facts no generator may contradict** — keep them few, concrete and true.
+> Worked example: `docs/WORKED_EXAMPLE.md` → The learner.
+
+> **Read by:** every voice lane (`writer.voice_canon()`, beside persona and dialect), the
+> studio's Director and Architect, and the interactive session.
+> **Owns:** the standing facts about the learner — the one home.
+> **Not their commitments** (`learner_contract.md`) and **not live state**
+> (`progress/profile.md`, `progress/learner.json`).
+
+---
+
+## Their Standing With These People **(synthesize)**
+
+> Guidance: who the learner already is to the people whose speech they are learning, and
+> what is new. Name the relationship and its history in plain facts (how long, how often,
+> where). The most important sentence here is the framing generators must never get wrong:
+> a learner who is already family must never be written as a stranger at the gate; a
+> newcomer must never be written as an old friend. If they are new, say so, and say what
+> the welcome is like. 3–6 sentences.
+
+[Write the standing facts.]
+
+## Why Now **(synthesize)**
+
+> Guidance: one or two sentences on why the learner is starting at this point in their
+> life — in their own words if they gave them. It is the premise, never ground to make up.
+
+[Write the premise.]

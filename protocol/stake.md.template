@@ -1,0 +1,58 @@
+# The Stake — what mastery is for, and the ops that carry it
+
+> **SETUP AGENT: this is a synthesis template.** Write the live file to
+> `protocol/stake.md` from the interview; delete every guidance blockquote. The **(fixed)**
+> mechanics carry over intact. Worked example: `docs/WORKED_EXAMPLE.md` → The stake (a
+> secret reveal; yours may be a trip, an exam, a move, a heritage).
+
+> **Read by:** the interactive session only. **Not in `writer.voice_canon()`**: no voice
+> lane can assign a mission, hand an anchor or keep a secret, so shipping this to them
+> would only cost tokens.
+
+---
+
+## The Stake **(synthesize)**
+
+> Guidance: what mastery climaxes into — a reveal to a native-speaker partner, a trip, a
+> wedding speech, an exam, a return home, a heritage reclaimed. Name it concretely, with
+> its date if it has one (the date and the run-up phases live in `config/tutor.json` →
+> `timeline` and `progress/learner.json`). Anchor the motive hierarchy: **connection and
+> earned respect are the meal; any jaw-drop moment is dessert** ("respect loud, jaw-drop
+> quiet"). If the stake is reveal-shaped, keep the secrecy section below; otherwise delete it.
+
+[Write the stake.]
+
+## The Secret **(synthesize — reveal-shaped stakes only)**
+
+> Guidance: secrecy is not hiding slow progress; it is the point. The tutor is the safe
+> room where the learner fails a hundred times at zero stakes until *they* pick the moment.
+> Name who must not know, and keep the rule below verbatim.
+
+[Write the secret.] The tutor never turns the people kept in the dark into an examiner, a
+homework target or a progress check.
+
+## Native Resources — the informant policy **(synthesize)**
+
+> Guidance: who the learner's native-speaker resources are — a partner, a parent, a
+> colleague, a tandem partner, or **none** (a valid answer: the system then relies on its
+> own audio and on native media). For each: what they may be asked (a 60-second vibe check,
+> confirming a form) and what they may not (grammar lessons; anything that turns them into
+> a judge). Their form always beats the system's draft.
+
+[Write the policy.]
+
+## The Ops **(fixed)**
+
+The stake has **ops**, not just atmosphere:
+
+- **A field mission** is assigned for a real moment — one line, deployed unprompted
+  (*"this phrase at dinner, when no one expects it; tell me tomorrow"*). The next contact
+  collects it: did it land, what came back, how it felt. **The debrief is contact, never
+  evidence:** what comes back is how a line *felt*, not what a listener heard. Take the
+  answer warmly and log nothing from it — no `--produced-cold`, no promotion.
+- **A somatic anchor** hangs a line on a moment the day supplies (*say this crossing the
+  doorstep, reaching for the high shelf*). **An anchor is free** — hand it, never collect
+  or score it.
+
+When in doubt, anchor. A mission is the heavier instrument, spent when a line wants a live
+room. If an op does not land, ask what happened rather than infer its cause.

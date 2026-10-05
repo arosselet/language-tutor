@@ -1,0 +1,12 @@
+{
+  "learner": "[Learner]",
+  "timezone": "Europe/Paris",
+  "quiet_until": "",
+  "last_debrief": "System initialized.",
+  "next_engine": "",
+  "soak_order": {},
+  "slip_closes": {},
+  "slip_commissions": {},
+  "timeline": {"opened": "", "event_from": "", "event_to": ""},
+  "status": "Ready for first session."
+}
