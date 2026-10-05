@@ -90,6 +90,12 @@ def case_modules_follow_the_config():
     import pack
     import timeline
     check("core is always on", pack.module_on("core"))
+    import subprocess
+    import sys
+    for m in ("core", "audio", "phone", "timeline"):
+        r = subprocess.run([sys.executable, str(ROOT / "scripts" / "pack.py"), "module", m],
+                           cwd=ROOT, capture_output=True, text=True, encoding="utf-8")
+        check(f"the workflow gate agrees on {m}", (r.returncode == 0) == pack.module_on(m), r.stdout)
     check("timeline phases exist only when the module is on",
           bool(timeline.PHASES) == pack.module_on("timeline"))
     if not pack.module_on("timeline"):

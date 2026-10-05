@@ -15,6 +15,7 @@ held the regex itself would only ever be right for one of them.
 Imports nothing from this repo. Everything may import from here.
 
     python scripts/pack.py check [config.json ...]   # validate; exit 1 on problems
+    python scripts/pack.py module <name>             # exit 0 if on, 1 if off or not set up
 """
 import json
 import os
@@ -204,8 +205,13 @@ def load(path: Path = CONFIG_PATH) -> dict:
 
 
 def _cli(argv: list[str]) -> int:
+    if argv[:1] == ["module"] and len(argv) == 2:
+        # The workflows' gate: an unbootstrapped clone has every module off.
+        on = CONFIG_PATH.exists() and (argv[1] == "core" or _modules(load()).get(argv[1], False))
+        print(f"{argv[1]}: {'on' if on else 'off'}")
+        return 0 if on else 1
     if argv[:1] != ["check"]:
-        print(__doc__.strip().splitlines()[-1].strip())
+        print("\n".join(l.strip() for l in __doc__.strip().splitlines()[-2:]))
         return 2
     bad = 0
     for p in [Path(a) for a in argv[1:]] or [CONFIG_PATH]:

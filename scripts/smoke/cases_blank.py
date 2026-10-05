@@ -30,3 +30,11 @@ def case_setup_has_what_it_needs():
     for rel in ("SETUP.md", "AGENTS.md", "docs/CUSTOMIZATION.md", "requirements.txt",
                 "progress/profile.md.template"):
         check(f"{rel} present", (ROOT / rel).exists())
+
+
+def case_the_workflow_gate_sees_every_module_off():
+    """`pack.py module <name>` is what the workflows ask; a blank clone answers off."""
+    for m in ("core", "audio", "phone", "timeline"):
+        r = subprocess.run([sys.executable, str(ROOT / "scripts" / "pack.py"), "module", m],
+                           cwd=ROOT, capture_output=True, text=True, encoding="utf-8")
+        check(f"blank: {m} is off", r.returncode == 1, r.stdout + r.stderr)

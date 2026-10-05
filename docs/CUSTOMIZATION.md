@@ -103,6 +103,9 @@ An empty slot drops the example from its prompt rather than leaving a hole.
 | `phone` | off until setup wires a receiver | no knocks, replies or push queue |
 | `timeline` | on when `timeline.phases` is set | selection uses `default_direction`; no phase markers |
 
+The workflows ask `python scripts/pack.py module <name>` (exit 0 = on); a blank clone
+answers off for every module, so its Actions skip green.
+
 ### `timeline` (only with a dated stake)
 
 The mechanism is fixed. The phases are data, written from the learner's stake and date,
@@ -140,3 +143,19 @@ machine can award itself measures the machine. The dates live in
 | TTS coverage | `tts.*` | No voices ⇒ the audio module is off |
 
 A port that hits an axis not listed here adds a row and a slot, never a special case.
+
+## Dials outside the config
+
+| Dial | Where | Who turns it |
+|---|---|---|
+| Pedagogy: input minutes, coverage target, new words per dose, pacing | `progress/profile.md` → Calibration Notes | the tutor, reversibly (`protocol/diagnosis.md`); the learner sets the numbers |
+| The month's arc | `progress/profile.md` → The Arc; `content/world.md` §4 | the tutor at the month cut |
+| The stake's dates | `learner.json` → `timeline` via `sync_state.py timeline` | setup, then the learner |
+| Time zone, quiet-until | `learner.json` | the learner |
+| Secrets: `OPENROUTER_API_KEY`, `GCP_SA_KEY`, `PUSH_WEBHOOK_URL` | `.env` locally; GitHub Actions secrets in the cloud | setup Phase 6 |
+| The tick schedule | `.github/workflows/tutor.yml` → `schedule:` (ships commented out) | setup Phase 6 |
+| The phone receiver | outside the repo; contract in `docs/phone_loop.md` | setup Phase 6 |
+| Structural budgets | `scripts/smoke/cases_laws.py` | `@build`, only down, or up with what it could not retire |
+
+How the slots read when filled for a real learner: `docs/WORKED_EXAMPLE.md`. Which part
+of the machine owns each concern: `docs/PROTOCOL_MAP.md`.

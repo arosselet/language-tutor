@@ -14,6 +14,7 @@ import subprocess
 from datetime import date, datetime, timedelta
 
 import audio_titles
+from pack import module_on
 from slips import format_slip_block, slip_patterns
 from state_io import (BASE, EPISODES_PATH, FEEDBACK_LOG_PATH, KNOCK_LOG_PATH,
                       LEARNER_PATH, LEXICON_PATH, LOCAL_TZ, SESSION_LOG_PATH,
@@ -171,6 +172,8 @@ def cmd_status(_args):
     # The zone is NAMED, so a forgotten switch after travel is visible.
     print(f"Now: {datetime.now(LOCAL_TZ):%a %Y-%m-%d %H:%M %Z} ({LOCAL_TZ.key})")
     print(f"Learner: {learner.get('learner')}")
+    print("Modules on: " + ", ".join(m for m in ("core", "audio", "phone", "timeline") if module_on(m))
+          + " — never commission a lane in a module that is off.")
     # A held channel must SAY it is held, or it reads as the learner going quiet.
     quiet_until = learner.get("quiet_until") or ""
     if quiet_until:

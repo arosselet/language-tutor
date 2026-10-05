@@ -1,6 +1,6 @@
 # Sollu v6 — Fresh Extraction Spec
 
-> **Status:** W0–W5 done 2026-10-05. W6 (docs), W7 (workflows) and W8 (acceptance) in progress.
+> **Status:** W0–W6 done 2026-10-05. W7 (workflows) and W8 (acceptance) in progress.
 > **Source:** `tamil-tutor` at `43525f5` (2026-10-05), tagged `template-v6-source`: the
 > first commit that carries all three landed §0 seams and the 10-05 pedagogy changes
 > (§3 item 11). The census figures below were re-taken at the tag (W0).

@@ -24,6 +24,12 @@ MODULES = {
 }
 BUDGETS = {"core": 8000, "audio": 4000, "phone": 4000, "timeline": 1000, "smoke": 5000}
 FIXED_PROSE_BUDGET = 9000
+# Prohibitions in the fixed law plus every mandate string. Census at birth: 159
+# under a distinct-script pack (85 prose + 74 mandates), 160 under a shared-script
+# one (the span rule's never). Only ever moves down, or up in a diff that names
+# what it could not retire and why. Prose slots are the instance's, not counted.
+PROHIBITION_RE = re.compile(r"(?i)\b(?:never|must not|do not|don['’]t)\b")
+PROHIBITION_BUDGET = 160
 
 
 def mechanism_lines(src: str) -> list[tuple[int, str]]:
@@ -93,6 +99,29 @@ def case_the_fixed_prose_names_no_learner_or_language():
     bad = [f"{p.name}: {n}" for p in fixed for n in names
            if re.search(rf"\b{re.escape(n)}\b", p.read_text(encoding="utf-8"))]
     check("no fixed protocol file names this learner, tutor or language", not bad, f"{bad}")
+
+
+def case_the_prohibitions_do_not_grow():
+    """A new never retires an old one in the same diff."""
+    import mandates
+    import pack
+    fixed = [p for p in sorted((ROOT / "protocol").rglob("*.md"))
+             if p.relative_to(ROOT).as_posix() not in set(pack.PROSE_SLOTS)]
+    texts = [p.read_text(encoding="utf-8") for p in fixed]
+    # The pack's fragments are spliced into many mandates; each counts ONCE, so the
+    # census is the same law under every pack (the span rule adds its one never).
+    fragments = [f for f in (pack.AUDIO_FORM, pack.CHAT_FORM, pack.WEAVE_RULE) if f]
+    for k, v in vars(mandates).items():
+        if k.isupper() and isinstance(v, str):
+            for f in fragments:
+                v = v.replace(f, "")
+            texts.append(v)
+    texts += fragments
+    nevers = sum(len(PROHIBITION_RE.findall(t)) for t in texts)
+    check("the prohibition scan still sees the law it counts", len(fixed) > 8 and nevers > 50,
+          f"{len(fixed)} files, {nevers} prohibitions — an empty scan would pass any budget")
+    check(f"prohibitions in the law: {nevers}/{PROHIBITION_BUDGET}", nevers <= PROHIBITION_BUDGET,
+          f"over by {nevers - PROHIBITION_BUDGET}")
 
 
 def case_every_prose_slot_has_a_template():

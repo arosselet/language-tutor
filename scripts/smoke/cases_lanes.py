@@ -145,3 +145,27 @@ def case_the_sort_reply_is_parsed_by_python():
     check("'got them all' misses none", rs.parse_reply("got them all", 20) == set())
     check("'got 1 and 2' inverts to the rest", rs.parse_reply("got 1 and 2", 3) == {3})
     check("an uncountable reply is None, never an empty score", rs.parse_reply("hmm", 20) is None)
+
+
+def case_a_dry_run_payoff_refuses_without_writing():
+    """A refusal under --dry-run counts no try, writes no note, commits nothing."""
+    import sys
+    import render_payoff as rp
+    ts = "2026-10-01T10:00:00+00:00"
+    write("progress/knock_log.json", [{"timestamp": ts, "modality": rp.TAPE_MODALITY, "acted": True,
+                                       "mp3": "knock_2026-10-01T10-00.mp3",
+                                       "memo_script": "One line here. Another line there."}])
+    write("progress/feedback_log.json", [])
+    commits = Recorder()
+    saved = rp.commit_and_push, rp.write_sheet, rp.align, sys.argv
+    rp.commit_and_push = commits
+    rp.write_sheet = lambda entry, lines: {"opener": "", "closer": "", "glosses": []}
+    rp.align = lambda lines, sheet: ([], "the glosses do not line up")
+    sys.argv = ["render_payoff.py", "--knock-id", ts, "--dry-run"]
+    try:
+        rp.main()
+    finally:
+        rp.commit_and_push, rp.write_sheet, rp.align, sys.argv = saved
+    check("nothing committed", not commits.calls, f"{commits.calls}")
+    check("no try counted", "payoff_tries" not in read("progress/knock_log.json")[0])
+    check("no feedback note", read("progress/feedback_log.json") == [])

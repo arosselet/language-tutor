@@ -2,39 +2,26 @@
 
 [![Smoke Test](https://github.com/arosselet/language-tutor/actions/workflows/smoke.yml/badge.svg)](https://github.com/arosselet/language-tutor/actions/workflows/smoke.yml)
 
-> ### Status: this is a 2026-07-27 snapshot, and it is behind
+> ### Status: v6 — a fresh extraction, 2026-10-05
 >
 > Sollu is extracted from a working system — [tamil-tutor](https://github.com/arosselet/tamil-tutor),
 > which one person uses every day. That is the template's whole value and also
 > its catch: **the extraction is only as mature as the day it was taken.**
 >
-> This copy is `template-v5`, cut on 2026-07-27. The source has moved ~310
-> commits since, and August was a consolidation month — the sprawl of a
-> bottom-up build getting deleted and refactored rather than extended. So the
-> gap is not a lag, it is a **different architecture**. Missing here entirely:
-> the state-layer split (`state_io` / `slips` / `session_brief`), the prompt-canon
-> module (`mandates`), the commissioning law, the capacity-routing law
-> (`audio_channels`), and the long-haul audio lane. Also present here and since
-> fixed upstream: symlinked `AGENTS.md` / `.agents/skills` (they do not survive a
-> Windows checkout — you get a 9-byte text file and no instructions), a publish
-> path with no rebase that swallows its own failure, and staleness scored on the
-> host clock instead of the learner's.
+> This is v6, re-derived from tamil-tutor at `template-v6-source` rather than
+> patched forward (`docs/LINEAGE.md`; the July snapshot is tagged `template-v5`).
+> The smoke suite holds the template to its laws on two worked packs — Tamil, a
+> distinct script, and Spanish, which shares English's — and on a blank clone.
+> What it has not had yet is a cold setup by someone other than its author; treat
+> the setup interview as the least-travelled road in the repo.
 >
 > **Nothing here is promised to anyone and nobody is waiting on it — MIT, you get
-> what you pay for.** The honest thing is to name the gap rather than let the
-> badge imply currency. If you are building on this, read it as a design study,
-> not a maintained dependency.
->
-> **v6 will be a fresh extraction, not a patch** — the architecture diverged too
-> far to sync file-by-file, and re-deriving is what forces the language/machinery
-> boundary to be redrawn honestly. It lands when the source is actually done
-> moving, measured rather than scheduled: no new `scripts/*.py` and no size-budget
-> raise for a month. Watching the calendar is how a stale note stays up for fifty
-> days; watching the ratchet is not.
+> what you pay for.** Read it as a design study you can run, not a maintained
+> dependency.
 
 A template for bootstrapping a **persistent, stateful language coach** for any
-language — powered by whatever coding agent you already use (Claude Code,
-Gemini CLI, …). Clone it, say *"set up my tutor"*, answer a ten-minute
+language — powered by the coding agent you already use (tested on Claude Code; the
+protocol is plain markdown any agent can read). Clone it, say *"set up my tutor"*, answer a ten-minute
 interview, and the agent synthesizes the rest: a tutor persona native to your
 target culture, a language charter for *your* dialect, a seed curriculum of
 high-frequency glue words, a podcast pipeline in native voices, and — if you
@@ -56,8 +43,7 @@ Audio: [`welcome.mp3`](published_audio/welcome.mp3) · transcript:
 **The name:** *Sollu* (சொல்லு) is spoken Tamil for **"say it!"** — the
 one-word imperative the whole system is built around. It's what the reference
 tutor — an elder brother — says when he hands you a situation and wants the
-line back; forced output is the engine, and the name keeps the template's
-origin language as its star. The form is itself a first lesson in register:
+line back, and the name keeps the template's origin language as its star. The form is itself a first lesson in register:
 சொல்லு is how an elder speaks *down* the table, and said *up* the table it
 takes the respect ending — சொல்லுங்க (*sollunga*). That ending is doing live
 work: it signals where you stand with the person you're facing. (Other endings
@@ -68,26 +54,24 @@ now is exactly the kind of thing the tutor derives for your language and teaches
 <!-- Tamil here must never START a run with ப, வ, or a Tamil digit: Ubuntu's
 default Noto Grantha font claims exactly those codepoints, and Chrome picks
 fallback per run by its FIRST character — such runs render as tofu for any
-Ubuntu+Chrome visitor. Evidence: docs/DECISIONS.md (2026-07-19). -->
+Ubuntu+Chrome visitor. Evidence: tamil-tutor docs/DECISIONS.md (2026-07-19). -->
 
 **The worked example:** this template was extracted from
 [tamil-tutor](https://github.com/arosselet/tamil-tutor), a real system in daily
-use for months. `docs/WORKED_EXAMPLE.md` distills how each template elaborated
-there; `docs/DECISIONS.md` seeds the lessons it learned the hard way. This
-snapshot elaborates tamil-tutor at tag `template-v4-source`; the reference
-implementation moves ahead of it, and the template re-syncs by wholesale
-re-extraction at stable milestones — not per-fix backports. The synthesis has
-also run cold beyond its origin: a second tutor (Dutch, Netherlands colloquial)
-was elaborated from a fresh interview in one sitting, both culture-dependent
-rules deriving correctly — *flipped* for the new language, not copied
-(`docs/DECISIONS.md`, 2026-07-19).
+use for months. `docs/WORKED_EXAMPLE.md` shows how each template elaborated
+there; `docs/DECISIONS.md` seeds the lessons it learned the hard way, each with
+its evidence. The template re-syncs by wholesale re-extraction at stable
+milestones — never per-fix backports. The synthesis has also run cold beyond
+its origin: a second tutor (Dutch, Netherlands colloquial) was elaborated from a
+fresh interview in one sitting, both culture-dependent rules deriving correctly
+— *flipped* for the new language, not copied.
 
 ## Quick start
 
 ```
 git clone https://github.com/arosselet/language-tutor my-tutor
 cd my-tutor
-# open your agent here (claude, gemini, …) and say:
+# open your agent here (claude, …) and say:
 #   "set up my tutor"        (or run /setup on Claude Code)
 ```
 
@@ -98,64 +82,58 @@ loop needs a GitHub repo with Actions and any webhook-capable notifier
 
 ## The pedagogy (why this isn't a flashcard app)
 
-The system tracks one honest number — the **viability floor**: of everything
-you *recognize*, how much can you actually **fire cold** (produce unaided, from
-a situation, no warm-up)? Everything serves moving that number:
+The goal is **following the room, and then joining it**: whole exchanges at
+ordinary native speed, about the things the learner's people actually talk
+about. Everything else serves that.
 
-- **Recognition plateaus; production breaks through.** Pure comprehensible
-  input builds a big passive vocabulary, then stalls. The engine is *forced
-  cold output*: a situation in your native language in, the target language
-  out. Narrow and deepen before widening.
-- **Engines, not word lists.** High-utility verbs are taught as generative
-  patterns (tense matrix, person toggle) and tested by demanding a *novel*
-  instance. Metered separately as **engines online**.
-- **Glue over vocabulary.** Verbs, connectors, pronouns, particles — the ~80%
-  of spoken connectivity. Know the glue and the environment turns from noise
-  into input.
-- **Register-first, ruthlessly.** The dialect people actually speak; textbook
-  and literary registers are ignored entirely.
-- **Teaching is generous; assessment is invisible.** A new item enters through
-  one open-handed **teach beat** — its payoff, a story hook, the word shown
-  living — before any channel may quiz it. From then on correction is a recast:
-  no quizzes, no grammar terminology; the tutor says it the natural way, moves
-  on, and quietly updates state.
-- **Momentum over accountability.** Contact time beats completion; one rep
-  beats zero; no streaks, no guilt. The coach reaches first — and backs off
-  when you say you're busy, because that's a real answer.
-- **The only narrative is yours.** Scenes are disposable one-use pegs; the
-  story with real stakes is your arc toward the thing mastery climaxes into —
-  a reveal, a trip, an exam. Climax = mastery.
+- **Comprehension leads; production is the probe.** A lesson makes an exchange
+  understandable — the blockage unpacked, the example changed — and invites a few
+  useful responses once meaning is clear. A listening lesson can stand on its
+  own. No daily output quota; no score gates the ear.
+- **Stories teach; lists check.** New words arrive inside a scene, a piece of
+  lore, a reason to care — one open-handed **teach beat** before anything may
+  quiz them. A list is for finding out what is known, never for teaching it.
+- **The ledger is honest.** Every fact about the learner is an observation with
+  a channel and a sense: heard is not read, delivered is not attended, attended
+  is not known, and what the learner *says* they know never votes. The picture
+  is checked by asking — the sweep — because every lesson is planned off it.
+- **Register-first, ruthlessly.** The dialect people actually speak, in the
+  register the learner's table uses; textbook forms are rewritten before any
+  voice says them.
+- **A world, not homework.** A fictional household (or office, or club) recurs
+  month to month with soap-sized stakes, so the ear tracks the same people
+  across hundreds of lines. It is never a portrait of the learner's real people.
+- **Momentum over accountability.** Contact time beats completion; a partial
+  session counts; a missed day is nothing. No streaks, no numbers recited, no
+  guilt. A fade is a signal about the material, and the tutor asks what is
+  grating — once.
+- **The only narrative is yours.** The story with real stakes is the learner's
+  arc toward the thing mastery pays off in — a table, a trip, a wedding, an exam
+  — and, if it has a date, a timeline of phases set at setup for that date.
 
 ## One brain, many surfaces
 
 Every mode reads and writes the same `progress/` state, so a word strained in
-chat is what the next podcast soaks, and a word soaked in audio is what the
-next chat forces cold:
+chat is what the next tape soaks, and a word heard on a tape is what the next
+chat unpacks:
 
-- **The daily session** (~5–15 min chat) — opens by *giving* (the running
-  story, a payoff, a tape — never "what do you want to do today?"), then the
-  day's shape carries honest cold volume: fires are moves inside a scene, the
-  week's **campaign** (a unit you called, that every medium reads) names
-  tomorrow's shape so you know what you're sitting down to, and on a fried day
-  the espresso floor (payoff, three fires, out) still counts.
+- **The daily session** (~15 min chat) — opens by *giving* (the running story,
+  coffee-and-lore, a payoff), then makes one exchange understandable and closes
+  by handing the studio a soak-order.
 - **The studio** — a three-role production crew (Director → Architect →
-  Producer) the tutor commissions end-to-end: dual-voice podcast episodes in
-  native TTS voices, published to an RSS feed your podcast app subscribes to.
-- **The drill track** — hands-free spoken volleys (cue → silence → answer,
-  twice) for the car and the kitchen.
+  Producer) that turns the soak-order and the month's arc into a two-voice
+  episode in native TTS voices, published to an RSS feed your podcast app
+  subscribes to. *(audio module)*
+- **Rotation, soak and drill tapes** — one press of play: a cadence of
+  movements, passive repetition for an ear on autopilot, or hands-free spoken
+  volleys for the car. *(audio module)*
 - **The knock loop** — the tutor decides, inside hard anti-pester rails,
-  whether/when/how to reach your phone: a text micro-dose, a 60–90s audio memo
-  in its one pinned voice, a challenge, a multi-item volley blitz, an
-  overheard eavesdrop tape (ear-training), a fielding dose (a question fired
-  AT you in a second voice — parsing it is half the rep, and a repair line
-  back is a pass), or grace. Type a reply straight
-  into the notification and a judge grades it — text the knock *showed* you
-  caps at "hinted"; only unaided production fires cold (with a graduation
-  lane so daily-knocked words can still escape the cap across days).
-- **Field missions** — one line assigned for live deployment tonight,
-  debriefed tomorrow. The strongest cold-fire evidence there is.
-- **Deck sprints** — a real deadline (trip, wedding, exam) gets a finite,
-  informant-vetted deck burned down against the date.
+  whether, when and how to reach your phone: a text, a voice memo, an overheard
+  tape and its payoff, a mission, or silence. Reply into the notification and a
+  judge grades it; text the knock *showed* you caps at "hinted". *(phone module)*
+- **The timeline** — phases between today and the stake's date, each deciding
+  which register leads, how many voices a tape carries and whether new words
+  still enter. *(timeline module)*
 
 ## The system design
 
@@ -165,27 +143,34 @@ next chat forces cold:
 - **Two halves, one interface.** Conversation (the tutor) and production (the
   studio) meet at exactly one contract — the *soak-order* — so neither can
   colonize the other.
-- **Everything language-specific is data.** One config file
-  (`config/tutor.json`) + four synthesized protocol files are the whole
-  language pack; the engine never hardcodes a language fact.
-  `docs/CUSTOMIZATION.md` maps every dial.
+- **Everything learner- or language-specific is data.** One config file
+  (`config/tutor.json`) plus the synthesized prose slots (persona, learner,
+  stake, contract, language, dialect, exemplars, the world) are the whole port
+  surface; a smoke-suite law fails the build if a learner name, a config value
+  or a target-script character appears in the mechanism.
+  `docs/CUSTOMIZATION.md` maps every dial, `docs/PROTOCOL_MAP.md` every part.
 
 ## Repository map
 
 ```
 SETUP.md              → The agent-led bootstrap protocol (start here)
-config/               → tutor.json — the one config surface (synthesized at setup)
-protocol/             → The pedagogy: constitution, daily session, diagnosis
-                        + synthesized: persona, language charter, studio cast & dialect
-protocol/studio/      → The production crew: director, architect, producer
-curriculum/           → word_pool.json (seed glue words) + optional sprint decks
-progress/             → The learner's brain: lexicon, continuity, logs (Python-owned)
-scripts/              → The engine: state, ticket, render, drills, knock, judge, queue, smoke test
-docs/                 → WORKED_EXAMPLE, CUSTOMIZATION, DECISIONS, PROTOCOL_MAP, phone_loop
-.github/workflows/    → The ticks: knock decisions, push-queue drain, reply judging, smoke test
-.claude/ + .gemini/   → Thin per-agent shells (/setup, /tutor, /studio)
-                        + the @build playbooks: /orient, /debug, /validate,
-                          /extend, /verify, /recalibrate
+AGENTS.md             → The router: no config → setup guide; config → tutor or @build
+config/               → tutor.json (written at setup) + examples/ (Tamil, Spanish)
+protocol/             → The law: constitution, daily session, diagnosis, toolbelt,
+                        commissioning, audio channels — plus *.md.template slots
+                        the setup agent synthesizes (persona, user, stake, …)
+protocol/studio/      → The production crew: studio, director, architect, producer, hosts
+content/              → world.md (the fictional world canon) + episode scripts
+curriculum/           → word_pool.json (the seed pool, synthesized at setup)
+progress/             → The learner's ledger and continuity (Python-owned)
+scripts/              → The engine; pack.py is the only reader of config
+scripts/smoke/        → The smoke suite: both example packs + a blank clone
+docs/                 → CUSTOMIZATION, WORKED_EXAMPLE, PROTOCOL_MAP, DECISIONS,
+                        phone_loop, LINEAGE, SPEC_v6
+.github/workflows/    → tutor.yml (the ticks; cron ships commented out) + smoke.yml
+.claude/              → Thin shells: /setup, /tutor, the studio subagent, and the
+                        @build playbooks /orient, /debug, /validate, /extend,
+                        /verify, /recalibrate
 ```
 
 ## After setup

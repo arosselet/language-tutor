@@ -284,15 +284,21 @@ def main():
     stem = stem_of(entry)
     lines = tape_lines(entry.get("memo_script", ""))
     print(f"1. sheet… ({entry.get('date')} · {entry.get('move')} · {len(lines)} lines)")
+    def refused(why: str) -> None:
+        # A dry run reports the refusal and counts nothing: the try counter and
+        # the feedback note are state, and committing them is the run's job.
+        if args.dry_run:
+            print(f"[dry-run] would refuse {stem}: {why} — nothing counted or committed.")
+            return
+        commit_and_push(*publish(refuse(entry, klog, why), REFUSED))
+
     if not lines:
-        commit_and_push(*publish(refuse(entry, klog, "the tape has no lines"), REFUSED))
-        return
+        return refused("the tape has no lines")
 
     sheet = write_sheet(entry, lines)
     glosses, why = align(lines, sheet)
     if why:
-        commit_and_push(*publish(refuse(entry, klog, why), REFUSED))
-        return
+        return refused(why)
     if args.dry_run:
         print(json.dumps({"opener": sheet["opener"], "closer": sheet["closer"],
                           "walk": list(zip(lines, glosses))},
