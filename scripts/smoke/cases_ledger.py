@@ -11,6 +11,24 @@ def _fold(events):
     return lexicon_view.derive([{"at": "2026-10-01T12:00:00Z", **e} for e in events])
 
 
+def case_a_variant_spelling_is_the_same_row():
+    """resolve folds a typed variant onto its one key; add-word merges, never mints."""
+    import pack
+    from state_io import resolve
+    word = target_sample() or "palabra"
+    variant = f" {word} " if pack.DISTINCT_SCRIPT else pack.fold(word).upper()
+    check("the variant resolves to the stored key", resolve(variant, {word: {}}) == word, repr(variant))
+    if not pack.DISTINCT_SCRIPT:
+        twin = word.title() if word.title() != word else word.lower()
+        check("two keys that fold alike resolve to neither",
+              twin == word or resolve(f" {variant} ", {word: {}, twin: {}}) is None)
+    write("progress/lexicon.json", {word: {"gloss": "", "recognition": "untested", "production": "none"}})
+    subprocess.run([sys.executable, str(ROOT / "scripts" / "sync_state.py"), "add-word", variant,
+                    "--gloss", "g"], cwd=ROOT, capture_output=True, check=True)
+    lex = read("progress/lexicon.json")
+    check("add-word merged into the existing row", list(lex) == [word] and lex[word]["gloss"] == "g", f"{lex}")
+
+
 def case_declared_channels_never_vote():
     """A seed claim speaks to its axis and moves nothing."""
     v = _fold([dict(word="w", channel="seed", kind="claimed", axis="recognition", result="right")])

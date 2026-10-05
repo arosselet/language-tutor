@@ -27,8 +27,10 @@ COPY = ("scripts", "protocol", "content", "curriculum", "progress", "config", "d
         "AGENTS.md", "SETUP.md", "requirements.txt")
 
 
-def sandbox(config: Path | None) -> Path:
-    """A throwaway copy of the repo; `config` None makes it a blank clone."""
+def sandbox(config: Path | None, live: bool = False) -> Path:
+    """A throwaway copy of the repo; `config` None makes it a blank clone. A fixture
+    pack gets the fixture world and the templates as its prose; the live pack keeps
+    the learner's own, so the suite tests what setup actually wrote."""
     root = Path(tempfile.mkdtemp(prefix="sollu_smoke_"))
     for name in COPY:
         src = BASE / name
@@ -43,17 +45,18 @@ def sandbox(config: Path | None) -> Path:
             ex.with_suffix("").write_text(ex.read_text(encoding="utf-8"), encoding="utf-8")
         for name in ("knock_log", "push_queue", "feedback_log"):
             (root / "progress" / f"{name}.json").write_text("[]", encoding="utf-8")
-        (root / "content" / "world.md").write_text(
-            (BASE / "scripts/smoke/world_fixture.md").read_text(encoding="utf-8"), encoding="utf-8")
-        (root / "curriculum" / "word_pool.json").write_text("[]", encoding="utf-8")
-        for t in (root / "protocol").glob("*.md.template"):
-            t.with_suffix("").write_text(t.read_text(encoding="utf-8"), encoding="utf-8")
+        if not live:
+            (root / "content" / "world.md").write_text(
+                (BASE / "scripts/smoke/world_fixture.md").read_text(encoding="utf-8"), encoding="utf-8")
+            (root / "curriculum" / "word_pool.json").write_text("[]", encoding="utf-8")
+            for t in (root / "protocol").glob("*.md.template"):
+                t.with_suffix("").write_text(t.read_text(encoding="utf-8"), encoding="utf-8")
     subprocess.run(["git", "init", "-q"], cwd=root, check=True)
     return root
 
 
 def run_pack(name: str, config: Path | None) -> bool:
-    root = sandbox(config)
+    root = sandbox(config, live=name == "live")
     try:
         r = subprocess.run([sys.executable, str(root / "scripts" / "smoke" / "run.py"), name],
                            cwd=root, env={**__import__("os").environ, "PYTHONUTF8": "1",

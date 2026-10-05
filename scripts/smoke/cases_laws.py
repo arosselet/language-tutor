@@ -23,6 +23,26 @@ MODULES = {
     "timeline": ["timeline"],
 }
 BUDGETS = {"core": 8000, "audio": 4000, "phone": 4000, "timeline": 1000, "smoke": 5000}
+# The import stack, bottom to top (docs/PROTOCOL_MAP.md → Python brain). Every
+# import, lazy ones included, points to a strictly lower layer. A new file joins a
+# layer in the same diff, the way it joins a budget group.
+LAYERS = [
+    "pack",
+    "state_io",
+    "observations audio_titles generate_callbacks month world timeline rails render_chat mandates",
+    "lexicon_view dose_evidence writer rebuild_rss",
+    "slips receptive_check publish",
+    "suggest_targets render_audio commissions",
+    "sync_state memo render_sort",
+    "session_brief show_status lanes reply_common push_queue lesson_audio run_studio",
+    "knock_message morning_knock render_soak render_drill render_rotation render_payoff",
+    "knock_reply",
+]
+# Upward imports that are allowed, each with its reason. Keep this list short.
+BACK_EDGES = {("sync_state", "session_brief"): "`status` prints the brief; imported inside main only"}
+# Only pack.py may locate or load the config; everything else asks the pack.
+CONFIG_READ_RE = re.compile(r"tutor\.json|SOLLU_CONFIG|\bCONFIG_PATH\b|\bpack\.CONFIG\b"
+                            r"|import\b[^\n]*\bCONFIG\b|[\"']config[\"']")
 FIXED_PROSE_BUDGET = 9000
 # Prohibitions in the fixed law plus every mandate string. Census at birth: 159
 # under a distinct-script pack (85 prose + 74 mandates), 160 under a shared-script
@@ -53,7 +73,7 @@ def _needles() -> set[str]:
     out = set()
     for f in sorted((ROOT / "config" / "examples").glob("*.json")) + [ROOT / "config" / "tutor.json"]:
         c = json.loads(f.read_text(encoding="utf-8"))
-        out |= {c["learner"]["name"], c["tutor"]["name"], c["language"]["variety"],
+        out |= {c["learner"]["name"], c["tutor"]["name"], c["language"]["name"], c["language"]["variety"],
                 c.get("feed", {}).get("title", ""), c.get("feed", {}).get("repo", ""),
                 c.get("tts", {}).get("tutor_voice", ""), c.get("tts", {}).get("eavesdrop_voice", ""),
                 c["writer"]["model"]}
@@ -85,6 +105,19 @@ def case_no_mechanism_file_holds_a_learner_or_a_language():
     planted = f'"""{name} in a docstring is free."""\nX = "{name}"  # trailing\n'
     check("a planted copy is caught, and the docstring is free",
           [h.split(":")[0] for h in _hits(planted, {name}, None)] == ["2"])
+
+
+def _config_reads(src: str) -> list[int]:
+    return [i for i, ln in mechanism_lines(src) if CONFIG_READ_RE.search(ln)]
+
+
+def case_only_the_pack_reads_the_config():
+    """pack.py is the one reader of config/tutor.json; every other file asks it."""
+    files = [p for p in SCRIPTS.glob("*.py") if p.name not in ("pack.py", "smoke_test.py")]
+    bad = {p.name: r for p in files if (r := _config_reads(p.read_text(encoding="utf-8")))}
+    check("no mechanism line locates or loads the config", not bad, f"{bad}")
+    planted = '"""reads config/tutor.json in prose — free."""\nC = json.load(open("config/tutor.json"))\n'
+    check("a planted direct read is caught, and the docstring is free", _config_reads(planted) == [2])
 
 
 def case_the_fixed_prose_names_no_learner_or_language():
@@ -181,8 +214,11 @@ def case_the_budgets_hold():
 
 
 def case_imports_point_down_the_stack():
-    """pack imports nothing local; state_io only pack; the ledger layer no lane."""
-    local = {p.stem for p in SCRIPTS.glob("*.py")}
+    """Every import, lazy ones included, points to a strictly lower layer (LAYERS)."""
+    local = {p.stem for p in SCRIPTS.glob("*.py")} - {"smoke_test"}
+    rank = {m: i for i, layer in enumerate(LAYERS) for m in layer.split()}
+    check("every script sits in a layer", set(rank) == local,
+          f"unlayered {sorted(local - set(rank))}, missing {sorted(set(rank) - local)}")
 
     def deps(name):
         tree = ast.parse((SCRIPTS / f"{name}.py").read_text(encoding="utf-8"))
@@ -192,13 +228,11 @@ def case_imports_point_down_the_stack():
                 out |= {a.name for a in n.names}
             elif isinstance(n, ast.ImportFrom) and n.module:
                 out.add(n.module)
-        return out & local
+        return out & local - {name}
+    up = [f"{m} -> {d}" for m in sorted(local & set(rank)) for d in sorted(deps(m))
+          if d in rank and rank[d] >= rank[m] and (m, d) not in BACK_EDGES]
+    check("no import points up or sideways", not up, f"{up}")
     check("pack imports nothing local", not deps("pack"), f"{deps('pack')}")
-    check("state_io imports only pack", deps("state_io") <= {"pack"}, f"{deps('state_io')}")
-    lanes = set(MODULES["phone"]) | {"render_soak", "render_drill", "render_rotation", "run_studio"}
-    up = {m: deps(m) & lanes for m in ("observations", "lexicon_view", "dose_evidence", "slips",
-                                       "month", "timeline", "world", "audio_titles") if deps(m) & lanes}
-    check("the ledger layer imports no lane", not up, f"{up}")
 
 
 def case_the_static_gate_is_clean():

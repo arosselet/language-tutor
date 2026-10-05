@@ -15,9 +15,12 @@ python scripts/smoke_test.py --pack live   # just this repo's pack
 ```
 
 Each pack runs in a throwaway copy with every model, TTS, push and git call stubbed.
-**Pass:** the last line is `ALL GREEN`. It covers the pack, the ledger, the lanes and the
-laws (budgets, import direction, no learner or language in mechanism, pyflakes). It
-doesn't cover the sound of audio, phone delivery, or what a model actually writes.
+**Pass:** the last line is `ALL GREEN`. It covers the pack, the ledger, the lanes (knock,
+reply, soak and a studio episode driven end to end in `cases_flows`) and the laws
+(budgets, import layers, only the pack reads config, no learner or language in
+mechanism, pyflakes). A repo with its own pack also gets a `live` run that checks the
+prose slots are written and the world canon parses. It doesn't cover the sound of audio,
+phone delivery, or what a model actually writes.
 
 ## Layer 2 — status (read-only)
 

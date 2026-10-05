@@ -34,14 +34,18 @@ def case_an_overheard_tape_must_name_its_subject():
     """The referent rule: kinship nouns from the pack, names from the world canon."""
     import morning_knock as mk
     import pack
-    names = sorted(__import__("world").names())
-    check("the world canon yields names (both forms)", "Gran" in names and "Granny" in names, f"{names}")
-    check("a tape opening on a cast name passes", mk.tape_names_a_referent("Granny called.\n\nShe said…"))
+    import world
+    names, cast = world.names(), world.cast()
+    if not check("the world canon yields names (both forms)", cast and set(cast) <= names, f"{sorted(names)}"):
+        return
+    # The target-language form when it differs from the name: the tape is in the target.
+    name = max(names - set(cast) or names, key=len)
+    check("a tape opening on a cast name passes", mk.tape_names_a_referent(f"{name} called.\n\nShe said…"))
     if pack.REFERENT_NOUNS:
         check("a tape opening on a kinship noun passes",
               mk.tape_names_a_referent(f"{pack.REFERENT_NOUNS[0]} called."))
     check("a tape that names nobody up front fails",
-          not mk.tape_names_a_referent("Someone called.\n\nThey said…\n\nGranny, later."))
+          not mk.tape_names_a_referent(f"Someone called.\n\nThey said…\n\n{name}, later."))
     d = mk.normalize_decision({"act": True, "modality": "eavesdrop", "stance": "ask",
                                "memo_script": "Someone called.\n\nNothing named."})
     check("an eavesdrop with no named referent is refused, never degraded to text",

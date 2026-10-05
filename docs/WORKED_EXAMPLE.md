@@ -66,8 +66,9 @@ for; no streak, no deficit narrated.
 
 ## The language letters
 
-- **Weave:** "English carries the logistics and scene-setting; Tamil carries the payload —
-  the load-bearing word of the sentence (*I told you to வை it here!*)." Code-switching with
+- **Weave** (`weave_rule` in the pack, condensed from the constitution's two weave rules):
+  English carries the logistics and scene-setting; Tamil carries the payload, the
+  load-bearing word of the sentence (*I told you to வை it here!*). Code-switching with
   English is native to urban Tamil, so English nouns are authentic, not scaffolding.
 - **Modality:** Andrew reads Tamil script slowly and romanization at speed, so the read form
   is English phonetics ("poren") and the voice form is Tamil script (`read_rewrite: true`,

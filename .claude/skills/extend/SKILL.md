@@ -40,7 +40,7 @@ State it: *"this replaces / simplifies ___."* A prohibition also names what it g
 
 Growth past a budget is a red run. A raise goes in the same diff as the growth, and the
 commit names what it could not retire. A new `scripts/*.py` joins a group in
-`cases_laws.MODULES` in the diff that creates it. **If you can't name what it replaces,
+`cases_laws.MODULES` and a layer in `cases_laws.LAYERS` in the diff that creates it. **If you can't name what it replaces,
 stop.**
 
 ## Gate 5 — surgical routing

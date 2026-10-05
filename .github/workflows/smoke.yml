@@ -9,6 +9,12 @@ on:
       - "scripts/**"
       - "config/**"
       - "protocol/**"
+      - "content/world.md*"
+      - "curriculum/**"
+      - "progress/*.example"
+      - "progress/*.template"
+      - "SETUP.md"
+      - "AGENTS.md"
       - ".github/workflows/**"
       - "requirements.txt"
   workflow_dispatch: {}

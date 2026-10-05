@@ -351,7 +351,9 @@ def write_episode(n: int, write_pass=claude_print) -> bool:
 
 
 def git_dirty() -> set[str]:
-    out = subprocess.run(["git", "status", "--porcelain"], cwd=BASE,
+    """Changed and untracked FILES. `-uall`: plain porcelain collapses a new
+    directory to one entry, and a fresh clone has no content/lessons/ yet."""
+    out = subprocess.run(["git", "status", "--porcelain", "-uall"], cwd=BASE,
                          capture_output=True, text=True, encoding="utf-8").stdout.splitlines()
     return {ln[3:].strip() for ln in out if ln[3:].strip()}
 

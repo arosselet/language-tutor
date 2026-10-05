@@ -20,7 +20,11 @@ curriculum/word_pool.json.example, progress/*.example, progress/profile.md.templ
 
 **`config/tutor.json` plus `pack.PROSE_SLOTS` is the whole port surface.** Everything
 else is fixed mechanism and fixed law, and neither one names a learner, a tutor, a
-language or a target-script character. `cases_laws` enforces this.
+language or a target-script character, and no file but `pack.py` reads the config.
+`cases_laws` enforces all of it; the target-script sweep bites only under a
+distinct-script pack. When a repo has its own pack, the smoke suite's `live` run also
+checks that every prose slot is written and that the world canon parses
+(`cases_live`).
 
 ## The two halves
 
@@ -106,15 +110,18 @@ owns render, registration and commit. A non-zero exit falls back to the subagent
 ## Python brain (`scripts/`)
 
 **Imports point one way, down the stack.** A lower layer never imports a higher one, and
-a channel never owns an invariant that more than one channel obeys. `cases_laws` asserts
-the direction. Bottom to top:
+a channel never owns an invariant that more than one channel obeys. `cases_laws.LAYERS`
+gives every script a layer, and every import (lazy ones included) must point to a
+strictly lower one; the one allowed exception is listed with its reason in
+`BACK_EDGES`. A new file joins a layer in the diff that creates it. Bottom to top:
 
 - **`pack.py`**: the only reader of config. Lanes ask it **questions** (`is_canonical`,
-  `has_target`, `target_runs`, `l1_runs`, `stem`, `host_stem`, `needs_read_form`,
-  `unmark`, `voice_locale`, `module_on`), never a regex. The answers differ for a
-  distinct-script target (`script_regex`) and a shared-script one (declared ⟦ ⟧ spans).
-  It imports nothing from the repo.
-- **`state_io.py`**: paths, load/save, the local clock, token→key `resolve`, the soak
+  `has_target`, `target_runs`, `l1_runs`, `stem`, `host_stem`, `fold`, `heads`,
+  `needs_read_form`, `unmark`, `voice_locale`, `module_on`), never a regex. The answers
+  differ for a distinct-script target (`script_regex`) and a shared-script one (declared
+  ⟦ ⟧ spans). It imports nothing from the repo.
+- **`state_io.py`**: paths, load/save, the local clock, token→key `resolve` (a spelling
+  that `fold`s to exactly one key is that key), the soak
   payload resolvers, and read-only predicates. It imports only the pack.
 - **`observations.py`**: the log's vocabulary and its appender. **`lexicon_view.py`**:
   `derive` (pure fold), `rebuild` (the one writer of evidence), `observe`, `expose` (the

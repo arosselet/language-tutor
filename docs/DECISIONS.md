@@ -14,7 +14,7 @@ The seed below is inherited. Every entry was earned in the reference system
 - **Every addition names what it replaces.** An addition that simplifies nothing is suspect. *Evidence: the reference system's worst week was accumulation (NOT-lists, format rotation, micro-debriefs); its best moves were separations.*
 - **Surgical edits to the owning file.** Dialect → `dialect.md`, voice → `hosts.md`, selection → `suggest_targets.py`. Never rewrite a role file for a one-off.
 - **Fix the tool, not the personality.** When the tutor seems forgetful or pushy, read the plumbing (workflow logs, `knock_log.json` timestamps) before touching persona or prompts. *Evidence: "the tutor had no knowledge of my reply" was a same-tick collision in the push queue.*
-- **Diagnosis subtracts first.** Trace a complaint to the rule producing it and prune before adding. *Evidence: 322 reference decisions, 26 of which retired anything.*
+- **Diagnosis subtracts first.** Trace a complaint to the rule producing it and prune before adding. *Evidence: when two felt complaints arrived the same weekend, both traced to existing rules and nothing needed adding.*
 - **Audit the picture before tuning the behaviour.** "Why do I keep hearing words I know" was a ledger fault, not selection, format or pedagogy. Test the lexicon against the learner's answers first.
 - **Felt experience is the primary diagnostic; the feedback ledger is its sensor.** `@build` work is evidence-only.
 - **A fade is a signal, not a discipline failure.** Check palatability first, never answer a fade with accountability machinery. *Evidence: the reference system's May fade.*
@@ -23,7 +23,7 @@ The seed below is inherited. Every entry was earned in the reference system
 - **A dropped rule is hunted through code, prompts, skills and tests.** Marking a rule superseded in prose leaves it live everywhere else.
 - **One map, one narrative surface.** `docs/PROTOCOL_MAP.md` is the only architecture map, and git holds the history. A second copy of a fact drifts.
 - **The budgets are the structure control.** Every surface and script group is budgeted, and a new file is budgeted in the diff that creates it. Rows of data are free.
-- **Prohibitions are budgeted: a new never retires an old one.** *Evidence: nothing in the reference system made a live rule leave when its cause did.*
+- **Prohibitions are budgeted: a new never retires an old one.** *Evidence: of 322 reference decisions, 26 retired anything; nothing made a live rule leave when its cause did.*
 - **A "never" names what it guards.**
 - **Static clean is a ratchet surface, budget zero** (pyflakes). The suite proves only what it executes.
 - **Meters measure effect, not execution.** A counter nobody writes reads as measurement. *Evidence: `listens` had only self-report writers and a seed of 0.*

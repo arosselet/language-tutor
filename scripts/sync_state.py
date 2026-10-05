@@ -491,12 +491,14 @@ def cmd_add_word(args):
     if not is_canonical(args.key):
         print(f"  ! '{args.key}' isn't a canonical {LANGUAGE} key — records must be canonical.")
         sys.exit(1)
-    if args.key in lexicon:
-        rec = lexicon[args.key]
+    key = resolve(args.key, lexicon)
+    if key is not None:
+        rec = lexicon[key]
         if args.gloss and not rec.get("gloss"):
             rec["gloss"] = args.gloss
         save_json(LEXICON_PATH, lexicon)
-        print(f"  '{args.key}' already exists — merged the gloss, learning state untouched.")
+        same = "" if key == args.key else f" as '{key}' (same key, spelled differently)"
+        print(f"  '{args.key}' already exists{same} — merged the gloss, learning state untouched.")
         return
     lexicon[args.key] = {
         "gloss": args.gloss,
@@ -694,8 +696,11 @@ def cmd_seed(args):
         if lex_type != "pattern" and not is_canonical(word):
             print(f"  ! '{word}' isn't a canonical {LANGUAGE} key — chunks must be canonical. Skipped.")
             continue
-        if word in lexicon:
-            rec = lexicon[word]
+        key = resolve(word, lexicon) if lex_type != "pattern" else (word if word in lexicon else None)
+        if key is not None:
+            if key != word:
+                print(f"  ~ '{word}' is the existing key '{key}', spelled differently — updated that row.")
+            rec = lexicon[key]
             rec["direction"] = e.get("direction", "fire")
             if e.get("register"):
                 rec["register"] = e["register"]

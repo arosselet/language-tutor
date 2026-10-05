@@ -7,7 +7,7 @@ the `.template` prose listed in `PROSE_SLOTS`; nothing else in `scripts/` may ho
 a learner name, a target-script character, or a config-owned literal.
 
 Lanes ask the pack QUESTIONS (`is_canonical`, `has_target`, `target_runs`,
-`stem`, `host_stem`, `needs_read_form`), never a regex. The same question has a
+`stem`, `host_stem`, `fold`, `heads`, `needs_read_form`), never a regex. The same question has a
 different answer for a distinct-script target (detected by `script_regex`) and a
 shared-script one (declared: writers wrap target spans in ⟦ ⟧), and a lane that
 held the regex itself would only ever be right for one of them.
@@ -21,6 +21,7 @@ import json
 import os
 import re
 import sys
+import unicodedata
 from pathlib import Path
 
 BASE = Path(__file__).parent.parent
@@ -215,7 +216,14 @@ def _cli(argv: list[str]) -> int:
         return 2
     bad = 0
     for p in [Path(a) for a in argv[1:]] or [CONFIG_PATH]:
-        problems = check(json.loads(p.read_text(encoding="utf-8")))
+        if not p.exists():
+            print(f"✗ {p}\n    not found — no config yet means this repo is not set up (SETUP.md)")
+            bad += 1
+            continue
+        try:
+            problems = check(json.loads(p.read_text(encoding="utf-8")))
+        except json.JSONDecodeError as e:
+            problems = [f"not valid JSON ({e})"]
         print(f"{'✗' if problems else '✓'} {p}" + "".join(f"\n    {x}" for x in problems))
         bad += bool(problems)
     return 1 if bad else 0
@@ -228,17 +236,16 @@ CONFIG = load()
 _lang, _tts, _feed = CONFIG["language"], CONFIG.get("tts", {}), CONFIG.get("feed", {})
 
 # ── Who ──────────────────────────────────────────────────────────────────────
+# Pronouns and the relationship are setup's data for the prose slots; the code
+# names people and never needs them. `language.direction` is validated but no
+# renderer reads it yet (RTL is untested), so neither is exported.
 LEARNER = CONFIG["learner"]["name"]
-LEARNER_PRONOUNS = CONFIG["learner"]["pronouns"]
 NATIVE_LANGUAGE = CONFIG["learner"]["native_language"]
 TUTOR = CONFIG["tutor"]["name"]
-TUTOR_PRONOUNS = CONFIG["tutor"]["pronouns"]
-TUTOR_RELATIONSHIP = CONFIG["tutor"]["relationship"]
 
 # ── The language ─────────────────────────────────────────────────────────────
 LANGUAGE = _lang["name"]
 VARIETY = _lang["variety"]
-DIRECTION = _lang.get("direction", "ltr")
 REFERENT_NOUNS = tuple(_lang.get("referent_nouns", ()))
 EXAMPLES = dict(CONFIG.get("examples", {}))
 _SCRIPT = re.compile(_lang["script_regex"]) if _lang.get("script_regex") else None
@@ -296,6 +303,26 @@ def needs_read_form(text: str) -> bool:
     """Does a surface the learner READS need the rewrite lane? Only when the read
     form differs from the voice form and this text carries the voice form."""
     return READ_REWRITE and has_target(text)
+
+
+def fold(word: str) -> str:
+    """The form two spellings of one key share, for matching only (keys are stored
+    as written). Shared script: case and accents go, since the learner may type
+    "como estas" for "cómo estás". Distinct script: case only, because its combining
+    marks are letters (vowel signs), not decoration."""
+    w = " ".join(word.split()).casefold()
+    if _SCRIPT:
+        return w
+    return "".join(c for c in unicodedata.normalize("NFKD", w) if not unicodedata.combining(c))
+
+
+def heads(token: str, key: str) -> bool:
+    """Is `token` the head of the longer key `key` (a bare headword for a chunk)?
+    Distinct script: a prefix, as the language agglutinates. Shared script: whole
+    leading words, so a fragment never claims a phrase it only starts like."""
+    if _SCRIPT:
+        return key.startswith(token)
+    return fold(key).startswith(fold(token) + " ")
 
 
 def stem(word: str) -> str:

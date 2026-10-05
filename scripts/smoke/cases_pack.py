@@ -52,6 +52,20 @@ def case_stems_follow_the_declared_rule():
     check("host_stem keeps at least what stem keeps", len(pack.host_stem(word)) >= len(pack.stem(word)))
 
 
+def case_spellings_fold_per_script_model():
+    """`fold` drops case (and accents in a shared script); `heads` matches whole words
+    in a shared script and a prefix in a distinct one."""
+    import pack
+    word = target_sample() or "palabra"
+    if pack.DISTINCT_SCRIPT:
+        check("a distinct script keeps its marks (vowel signs are letters)", pack.fold(word) == word)
+        check("a prefix heads a longer key", pack.heads(word[:-1], word))
+    else:
+        check("case and accents fold away", pack.fold("Cómo  ESTÁS") == pack.fold("como estas"))
+        check("a whole leading word heads a phrase", pack.heads(word, f"{word} extra"))
+        check("a fragment never heads a phrase", not pack.heads(word[:2], f"{word} extra"))
+
+
 def case_the_validator_has_teeth():
     """Planted bad configs are refused, each with a sentence."""
     import pack

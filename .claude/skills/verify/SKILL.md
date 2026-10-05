@@ -25,12 +25,15 @@ description: Prove a change works end-to-end — change type → verification pa
 | `push_queue.py list` | read-only |
 
 **Dry-run flags are not all equal.** `--dry-run` on the soak, drill, rotation, payoff,
-knock and studio lanes still makes the **model call**. Three of them write before they
+knock and studio lanes still makes the **model call**. Two of them write before they
 stop:
 
 - `morning_knock.py --dry-run` renders and writes the memo MP3 on an audio path.
-- `run_studio.py --dry-run` leaves the script and sidecar in `content/`.
-- `render_payoff.py --dry-run` **commits** when it refuses a tape.
+- `run_studio.py --dry-run` leaves the brief, script, sidecar and captions in
+  `content/`, and appends the episode's beat to `content/world.md`.
+
+`render_payoff.py --dry-run` writes nothing: a refusal is reported, never counted or
+committed (smoke `case_a_dry_run_payoff_refuses_without_writing`).
 
 `--no-publish` renders real audio locally and skips the feed, the commit and the push.
 `--plan-only` (rotation, sort) makes no model call. Read the branch in the script

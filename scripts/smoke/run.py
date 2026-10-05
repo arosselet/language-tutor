@@ -8,7 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from harness import COUNT, FAILS, section  # noqa: E402
 
-MODULES = ("cases_pack", "cases_ledger", "cases_lanes", "cases_laws")
+MODULES = ("cases_pack", "cases_ledger", "cases_lanes", "cases_flows", "cases_laws")
 
 
 def main(name: str) -> int:
@@ -16,7 +16,8 @@ def main(name: str) -> int:
     if name == "blank":
         mods = ["cases_blank"]
     else:
-        mods = list(MODULES)
+        # The live checks read what setup wrote, so they run before any case writes.
+        mods = (["cases_live"] if name == "live" else []) + list(MODULES)
     for m in mods:
         mod = importlib.import_module(m)
         for fn in [getattr(mod, f) for f in dir(mod) if f.startswith("case_")]:

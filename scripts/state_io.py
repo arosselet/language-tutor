@@ -13,7 +13,7 @@ from datetime import date, datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from pack import is_canonical
+from pack import fold, heads, is_canonical
 
 # Windows consoles default to cp1252, which cannot print most target scripts; a
 # digest that dies mid-print invites the agent to improvise state.
@@ -119,8 +119,14 @@ def is_give(entry: dict) -> bool:
 def resolve(word: str, lexicon: dict) -> str | None:
     """A token's canonical lexicon key, or None. One resolver is the contract
     every writer is canonical-at-write against; read forms are generated for
-    display and never stored, so the match is key to key."""
-    return word if word in lexicon else None
+    display and never stored, so the match is key to key. A spelling that folds
+    to exactly one key (`pack.fold`: case, and accents in a shared script) is that
+    key, so a typed variant never mints a second row; two candidates match none."""
+    if word in lexicon:
+        return word
+    folded = fold(word)
+    hits = [k for k in lexicon if fold(k) == folded]
+    return hits[0] if len(hits) == 1 else None
 
 
 def canon_payload(items: list[str]) -> list[str]:
@@ -138,7 +144,7 @@ def resolve_soak_item(token: str, lexicon: dict) -> str | None:
         return exact
     if is_canonical(token):
         for key in lexicon:
-            if key.startswith(token):
+            if heads(token, key):
                 return key
     return None
 

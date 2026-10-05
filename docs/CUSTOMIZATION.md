@@ -2,9 +2,10 @@
 
 A tutor is this engine plus two things the setup agent writes: **`config/tutor.json`**
 (the scalars) and the **prose slots** (the files listed below). Together they are the
-whole port surface. Nothing in `scripts/` may hold a learner's name, a target-script
-character, or a value that belongs in config; `scripts/pack.py` is the only reader of the
-config, and the smoke suite fails a mechanism file that grows one.
+whole port surface. Nothing in `scripts/` may hold a learner's or tutor's name, the
+language's name, a target-script character, or a config literal (voice IDs, the feed's
+title and repo, the writer model), and only `scripts/pack.py` may read the config. The
+smoke suite (`cases_laws`) fails a mechanism line that does either.
 
 Two worked examples, both kept valid by the smoke suite:
 
@@ -37,9 +38,11 @@ sections are **(fixed)** and which are **(synthesize)**.
 
 | Key | Meaning |
 |---|---|
-| `learner.name`, `learner.pronouns` | How prompts name the learner. Pronouns are asked, never inferred from a name |
+| `learner.name` | How every prompt names the learner. Prompts use the name, never a pronoun |
+| `learner.pronouns` | Asked, never inferred from a name. Setup writes them into the prose slots (`user.md`, `persona.md`); no code reads them |
 | `learner.native_language` | The language the weave scaffolds in; also the gloss language |
-| `tutor.name`, `tutor.pronouns`, `tutor.relationship` | The persona's identity in one line each; `persona.md` carries the rest |
+| `tutor.name` | The persona's name: prompts, push titles, the feed's default title |
+| `tutor.pronouns`, `tutor.relationship` | The persona's identity in one line each, for setup to write into `persona.md`; no code reads them |
 
 The learner's timezone is not here. It lives in `progress/learner.json`, so it follows them
 when they travel.
@@ -57,7 +60,7 @@ when they travel.
 | `stem_tail` | What inflection replaces at a word's end: a regex or a suffix list | verbatim matching only |
 | `host_tail` | Narrower than `stem_tail`: what a word drops inside a longer phrase | verbatim |
 | `tokenization` | `spaces` or `characters` (Chinese, Japanese, Thai) | `spaces` |
-| `direction` | `ltr` or `rtl`, for captions and notifications | `ltr` |
+| `direction` | `ltr` or `rtl`. **Reserved:** validated, but no renderer reads it yet. Record it so the first RTL port has its slot | `ltr` |
 | `referent_nouns` | Kinship/person nouns a tape may name its subject with | no referent check |
 
 ### `examples` (optional, at most 8)
@@ -139,7 +142,7 @@ machine can award itself measures the machine. The dates live in
 | Register ladder | `language.md` + `timeline.directions` | One rung is valid |
 | Referents and kinship | `referent_nouns` + `world.md` names | No referent check |
 | Diglossia | `dialect.md` | Always synthesized; its weight depends on the gap |
-| Script direction | `direction` | `ltr`. RTL is untested until a port needs it |
+| Script direction | `direction` (reserved; nothing reads it yet) | `ltr`. An RTL port wires captions and notifications to it and adds the case |
 | TTS coverage | `tts.*` | No voices ⇒ the audio module is off |
 
 A port that hits an axis not listed here adds a row and a slot, never a special case.
