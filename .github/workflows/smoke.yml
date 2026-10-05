@@ -1,0 +1,37 @@
+name: Smoke Test
+# The regression net: both example packs, a blank clone, and this repo's own pack
+# once it has one — each in a sandbox with every model, TTS, push and git call
+# stubbed. No secrets, no network, so it is green on a blank fork.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/**"
+      - "config/**"
+      - "protocol/**"
+      - ".github/workflows/**"
+      - "requirements.txt"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Lint the workflow files themselves
+        # A file that parses is not a workflow that runs: a validation error
+        # rejects the whole file with a zero-duration failed run.
+        run: |
+          curl -sSfL -o actionlint.tgz \
+            https://github.com/rhysd/actionlint/releases/download/v1.7.7/actionlint_1.7.7_linux_amd64.tar.gz
+          tar xzf actionlint.tgz actionlint
+          ./actionlint -color -ignore 'unexpected key "queue" for "concurrency" section'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - run: python scripts/smoke_test.py

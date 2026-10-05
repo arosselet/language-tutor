@@ -1,0 +1,160 @@
+name: Tutor
+# ONE runner for every trigger, so what the tutor can do never depends on which
+# event woke it: every step sees every secret. Each step is gated twice:
+#
+#   1. Is this repo set up? No config/tutor.json -> every step skips, green.
+#   2. Is the step's module on? `python scripts/pack.py module <name>` -> skip, green.
+#
+# The schedule ships COMMENTED OUT. A repo with nothing to say should not tick;
+# setup (SETUP.md Phase 6) uncomments it once the modules it needs are on. The
+# cron does not encode a schedule: the rails in rails.py filter waking hours and
+# skip a tick with no model call. It only has to be frequent enough to filter.
+#
+# The drain runs FIRST on every wake-up: it logs its fire into knock_log.json,
+# which the rails count before deciding whether to knock, so a scheduled push
+# correctly suppresses an ambient knock in the same tick.
+#
+# Payload values reach a step through `env:`, never inlined into `run:` — a
+# reply's text is the learner's, and inlining it would execute it as shell.
+on:
+  # schedule:
+  #   - cron: "0 * * * *"
+  repository_dispatch:
+    types: [knock-response, episode-rating]
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Skip the rails gate (one manual knock)"
+        required: false
+        default: "false"
+        type: choice
+        options: ["false", "true"]
+
+permissions:
+  contents: write              # every lane commits: queue, knock log, audio, state
+
+concurrency:
+  # One CI writer at a time, FIFO, nothing cancelled. At the default queue depth
+  # a newer run cancels a pending one, which silently eats the middle of a reply
+  # burst; `queue: max` keeps every run. Must stay `cancel-in-progress: false`.
+  group: tutor
+  queue: max
+  cancel-in-progress: false
+
+jobs:
+  tutor:
+    runs-on: ubuntu-latest
+    # The lane is shared, so a hung job stalls every reply behind it. Real work is
+    # seconds to a few minutes; a run past 30 is hung, not busy.
+    timeout-minutes: 30
+    env:
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      PUSH_WEBHOOK_URL: ${{ secrets.PUSH_WEBHOOK_URL }}
+      PYTHONUTF8: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Resolve the branch at run time: a queued run must not start from the
+          # tree as it was when its event arrived.
+          ref: main
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Is this repo set up?
+        id: gate
+        # pack.py is stdlib-only, so the gate needs no install.
+        run: |
+          if [ ! -f config/tutor.json ]; then
+            echo "Not set up yet (no config/tutor.json) — every step skips. See SETUP.md."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+          for m in audio phone timeline; do
+            if python scripts/pack.py module "$m"; then v=true; else v=false; fi
+            echo "$m=$v" >> "$GITHUB_OUTPUT"
+          done
+
+      - name: Install
+        if: steps.gate.outputs.ready == 'true'
+        run: pip install -r requirements.txt
+
+      - name: Install ffprobe
+        if: steps.gate.outputs.audio == 'true' && github.event_name != 'repository_dispatch'
+        timeout-minutes: 3
+        continue-on-error: true
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+
+      - name: Git identity
+        if: steps.gate.outputs.ready == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Write GCP credentials (Google TTS only)
+        if: steps.gate.outputs.audio == 'true'
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+        run: |
+          if [ -n "$GCP_SA_KEY" ]; then
+            printf '%s' "$GCP_SA_KEY" > /tmp/tutor-gcp.json
+            chmod 600 /tmp/tutor-gcp.json
+            echo "GOOGLE_APPLICATION_CREDENTIALS=/tmp/tutor-gcp.json" >> "$GITHUB_ENV"
+          fi
+
+      - name: Drain due pushes
+        if: steps.gate.outputs.phone == 'true'
+        continue-on-error: true
+        run: python scripts/push_queue.py drain
+
+      - name: Judge a reply
+        if: >-
+          steps.gate.outputs.phone == 'true' &&
+          github.event.action == 'knock-response' && github.event.client_payload.response == 'reply'
+        env:
+          REPLY_TEXT: ${{ github.event.client_payload.text }}
+          REPLY_KNOCK_ID: ${{ github.event.client_payload.knock_id }}
+          REPLY_INTENT: ${{ github.event.client_payload.intent }}
+        run: python scripts/knock_reply.py "$REPLY_TEXT"
+
+      - name: Log a tap
+        if: >-
+          steps.gate.outputs.phone == 'true' &&
+          github.event.action == 'knock-response' && github.event.client_payload.response != 'reply'
+        env:
+          TAP: ${{ github.event.client_payload.response }}
+          TAP_KNOCK_ID: ${{ github.event.client_payload.knock_id }}
+        run: python scripts/sync_state.py knock-response "$TAP" --knock-id "$TAP_KNOCK_ID" --commit
+
+      - name: Log a listen
+        if: steps.gate.outputs.audio == 'true' && github.event.action == 'episode-rating'
+        env:
+          RATING_EPISODE: ${{ github.event.client_payload.episode }}
+          RATING_VERDICT: ${{ github.event.client_payload.verdict }}
+        run: python scripts/sync_state.py rate-episode --episode "$RATING_EPISODE" --verdict "$RATING_VERDICT" --commit
+
+      - name: The tutor decides whether to knock
+        if: >-
+          steps.gate.outputs.phone == 'true' &&
+          (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+        env:
+          FORCE: ${{ github.event.inputs.force }}
+        run: |
+          if [ "$FORCE" = "true" ]; then python scripts/morning_knock.py --force; else python scripts/morning_knock.py; fi
+
+      - name: Run commissions
+        if: steps.gate.outputs.audio == 'true' && github.event_name == 'schedule'
+        continue-on-error: true
+        run: python scripts/commissions.py run
+
+      - name: Keep the shelf stocked
+        if: steps.gate.outputs.audio == 'true' && github.event_name == 'schedule'
+        continue-on-error: true
+        run: python scripts/render_rotation.py --if-short --minutes 8
+
+      - name: Pay off a closed tape
+        if: steps.gate.outputs.phone == 'true' && steps.gate.outputs.audio == 'true'
+        continue-on-error: true
+        run: python scripts/render_payoff.py
