@@ -1,0 +1,43 @@
+{
+  "_comment": "Worked example: a shared-script pack (the v5 Mexican-Spanish learner), no dated stake, phone loop off. Setup writes the learner's own config/tutor.json; docs/CUSTOMIZATION.md documents every key. The smoke suite runs against this file, so keep it valid.",
+  "learner": {"name": "Alex", "pronouns": "they/them", "native_language": "English"},
+  "tutor": {"name": "Tocayo", "pronouns": "he/him", "relationship": "the neighborhood friend who adopted the learner"},
+  "language": {
+    "name": "Spanish",
+    "variety": "Mexico City colloquial",
+    "audio_form": "correct written Spanish with accents (a Mexican Spanish voice speaks it), in the dialect canon's register",
+    "chat_form": "plain Spanish spelling; accents optional — 'como estas' IS 'cómo estás'",
+    "weave_rule": "English carries the logistics and scene-setting; Spanish carries the payload — the load-bearing word or phrase of the sentence",
+    "script_regex": null,
+    "read_rewrite": false,
+    "stem_tail": ["amos", "emos", "imos", "an", "en", "as", "es", "ar", "er", "ir", "o", "a", "e"],
+    "host_tail": null,
+    "tokenization": "spaces",
+    "direction": "ltr",
+    "referent_nouns": ["mamá", "papá", "abuela", "abuelo", "tía", "tío", "prima", "primo", "suegra", "suegro", "vecina", "vecino", "jefe"]
+  },
+  "examples": {
+    "repair_line": "¿Mande? Más despacio, porfa",
+    "addressed_question": "¿ya comiste? — answer her",
+    "typed_spelling": "\"como estas\" IS cómo estás",
+    "substitution": "\"no entendí\" for \"¿qué dijiste?\"",
+    "grammar_slip": "ser where estar is needed (soy cansado for estoy cansado)",
+    "pattern_thread": "the -ando tail — what's happening right now",
+    "contrast_title": "ser vs estar · what lasts vs what's now"
+  },
+  "tts": {
+    "provider": "edge",
+    "tutor_voice": "es-MX-JorgeNeural",
+    "eavesdrop_voice": "es-MX-DaliaNeural",
+    "pools": {"edge": {"male": ["es-MX-JorgeNeural"], "female": ["es-MX-DaliaNeural"]}}
+  },
+  "feed": {
+    "repo": "yourname/your-tutor-repo",
+    "title": "Tocayo's Kitchen",
+    "summary": "AI-generated Spanish lessons. Colloquial Mexico City register, dual-voice audio, built for daily life.",
+    "caption_columns": "Spanish · English"
+  },
+  "rails": {"waking_start_hour": 8, "waking_end_hour": 21, "max_reaches_per_day": 3, "min_gap_hours": 3},
+  "writer": {"model": "google/gemini-3.8-flash", "agent_model": null},
+  "modules": {"audio": true, "phone": false, "timeline": false}
+}

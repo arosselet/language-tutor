@@ -1,0 +1,243 @@
+{
+  "_comment": "Worked example: a distinct-script pack, from tamil-tutor at template-v6-source. Setup writes the learner's own config/tutor.json; docs/CUSTOMIZATION.md documents every key. The smoke suite runs against this file, so keep it valid.",
+  "learner": {
+    "name": "Andrew",
+    "pronouns": "he/him",
+    "native_language": "English"
+  },
+  "tutor": {
+    "name": "Anna",
+    "pronouns": "he/him",
+    "relationship": "elder brother by choice, from Coimbatore; adopted the learner into the family"
+  },
+  "language": {
+    "name": "Tamil",
+    "variety": "Coimbatore (Kongu) colloquial",
+    "audio_form": "natural spoken Coimbatore colloquial in TAMIL SCRIPT ONLY (a Tamil voice speaks it), in the dialect canon's register",
+    "chat_form": "English phonetics (\"poren\", \"romba nallarukku\") — he reads those at speed and Tamil script not at all",
+    "weave_rule": "English carries the logistics and scene-setting; Tamil carries the payload — the load-bearing word of the sentence (\"I told you to வை it here!\")",
+    "script_regex": "[஀-௿]",
+    "read_rewrite": true,
+    "stem_tail": "[ா-்]$",
+    "host_tail": "்$",
+    "tokenization": "spaces",
+    "direction": "ltr",
+    "referent_nouns": [
+      "அக்கா",
+      "அண்ணா",
+      "அண்ணன்",
+      "தங்கச்சி",
+      "தம்பி",
+      "அம்மா",
+      "அப்பா",
+      "மாமா",
+      "மாமி",
+      "அத்தை",
+      "சித்தி",
+      "சித்தப்பா",
+      "பெரியம்மா",
+      "பெரியப்பா",
+      "பாட்டி",
+      "தாத்தா",
+      "மச்சான",
+      "மாப்பிள்ளை",
+      "மருமக",
+      "பொண்ணு",
+      "பையன்",
+      "பிள்ளை",
+      "குழந்தை",
+      "வாத்தியார்",
+      "டாக்டர்"
+    ]
+  },
+  "examples": {
+    "repair_line": "புரியல, மெதுவா சொல்லுங்க",
+    "addressed_question": "saapteengala? — answer her",
+    "typed_spelling": "\"poren\" IS போறேன்",
+    "substitution": "\"puriyala\" for \"enna sonneenga?\"",
+    "grammar_slip": "locative -ல where dative -க்கு is needed (பக்கம்ல for the oblique பக்கத்துல)",
+    "pattern_thread": "the -ணும் tail — the things you have to do",
+    "contrast_title": "வா vs போ · direction only"
+  },
+  "tts": {
+    "provider": "google",
+    "tutor_voice": "ta-IN-Chirp3-HD-Orus",
+    "eavesdrop_voice": "ta-IN-Chirp3-HD-Kore",
+    "pools": {
+      "chirp": {
+        "male": [
+          "ta-IN-Chirp3-HD-Achird",
+          "ta-IN-Chirp3-HD-Algenib",
+          "ta-IN-Chirp3-HD-Algieba",
+          "ta-IN-Chirp3-HD-Alnilam",
+          "ta-IN-Chirp3-HD-Charon",
+          "ta-IN-Chirp3-HD-Enceladus",
+          "ta-IN-Chirp3-HD-Fenrir",
+          "ta-IN-Chirp3-HD-Iapetus",
+          "ta-IN-Chirp3-HD-Orus",
+          "ta-IN-Chirp3-HD-Puck",
+          "ta-IN-Chirp3-HD-Rasalgethi",
+          "ta-IN-Chirp3-HD-Sadachbia",
+          "ta-IN-Chirp3-HD-Sadaltager",
+          "ta-IN-Chirp3-HD-Schedar",
+          "ta-IN-Chirp3-HD-Umbriel",
+          "ta-IN-Chirp3-HD-Zubenelgenubi"
+        ],
+        "female": [
+          "ta-IN-Chirp3-HD-Achernar",
+          "ta-IN-Chirp3-HD-Aoede",
+          "ta-IN-Chirp3-HD-Autonoe",
+          "ta-IN-Chirp3-HD-Callirrhoe",
+          "ta-IN-Chirp3-HD-Despina",
+          "ta-IN-Chirp3-HD-Erinome",
+          "ta-IN-Chirp3-HD-Gacrux",
+          "ta-IN-Chirp3-HD-Kore",
+          "ta-IN-Chirp3-HD-Laomedeia",
+          "ta-IN-Chirp3-HD-Leda",
+          "ta-IN-Chirp3-HD-Pulcherrima",
+          "ta-IN-Chirp3-HD-Sulafat",
+          "ta-IN-Chirp3-HD-Vindemiatrix",
+          "ta-IN-Chirp3-HD-Zephyr"
+        ]
+      },
+      "wavenet": {
+        "male": [
+          "ta-IN-Wavenet-B",
+          "ta-IN-Wavenet-D"
+        ],
+        "female": [
+          "ta-IN-Wavenet-A",
+          "ta-IN-Wavenet-C"
+        ]
+      },
+      "edge": {
+        "male": [
+          "ta-IN-ValluvarNeural"
+        ],
+        "female": [
+          "ta-IN-PallaviNeural"
+        ]
+      }
+    }
+  },
+  "feed": {
+    "repo": "arosselet/tamil-tutor",
+    "title": "Coimbatore Mappillai",
+    "summary": "AI-generated Tamil lessons. Colloquial Kongu dialect, dual-voice audio, built for daily life.",
+    "caption_columns": "Tamil · phonetic · English"
+  },
+  "rails": {
+    "waking_start_hour": 8,
+    "waking_end_hour": 21,
+    "max_reaches_per_day": 3,
+    "min_gap_hours": 3
+  },
+  "writer": {
+    "model": "google/gemini-3.8-flash",
+    "agent_model": "claude-sonnet-5"
+  },
+  "modules": {
+    "audio": true,
+    "phone": true,
+    "timeline": true
+  },
+  "timeline": {
+    "event": "trip",
+    "default_direction": "across",
+    "directions": {
+      "down": {
+        "room": "children",
+        "leads": [
+          "frame",
+          "public",
+          "social"
+        ]
+      },
+      "across": {
+        "room": "cousins and in-laws",
+        "leads": [
+          "faq",
+          "gossip",
+          "social"
+        ]
+      },
+      "up": {
+        "room": "elders",
+        "leads": [
+          "antifreeze",
+          "faq",
+          "mil-table"
+        ]
+      }
+    },
+    "trails": [
+      "zinger"
+    ],
+    "phases": [
+      {
+        "name": "excavation",
+        "days": 21,
+        "direction": "across",
+        "voices": 1,
+        "situation_given": true,
+        "intake": null,
+        "marker": "the Receptive Check is run and the ledger is re-based on it"
+      },
+      {
+        "name": "down",
+        "days": null,
+        "direction": "down",
+        "voices": 1,
+        "situation_given": true,
+        "intake": null,
+        "marker": "sixty unscripted seconds with a child, and no English in them"
+      },
+      {
+        "name": "across",
+        "days": null,
+        "direction": "across",
+        "voices": 2,
+        "situation_given": true,
+        "intake": null,
+        "marker": "five Tamil minutes with the one person briefed not to switch"
+      },
+      {
+        "name": "up",
+        "days": null,
+        "direction": "up",
+        "voices": 3,
+        "situation_given": false,
+        "intake": null,
+        "marker": "a call he starts, to an elder — starts, not answers"
+      },
+      {
+        "name": "taper",
+        "days": 42,
+        "direction": "up",
+        "voices": 3,
+        "situation_given": false,
+        "intake": 0,
+        "marker": "nothing new goes in; what he already has gets fast"
+      },
+      {
+        "name": "trip",
+        "days": null,
+        "event": true,
+        "direction": "up",
+        "voices": 3,
+        "situation_given": false,
+        "intake": 0,
+        "marker": "someone speaks to him in Tamil without thinking about it first"
+      },
+      {
+        "name": "harvest",
+        "days": 28,
+        "direction": "across",
+        "voices": 2,
+        "situation_given": false,
+        "intake": null,
+        "marker": "what he half-caught at the table is in the ledger"
+      }
+    ]
+  }
+}
