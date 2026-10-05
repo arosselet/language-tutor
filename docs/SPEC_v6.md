@@ -18,6 +18,7 @@ the extraction copies a clean seam instead of inventing one.
 | Status | Seam | Benefit to Tamil | v6 slot it becomes |
 |---|---|---|---|
 | **Landed 2026-10-05** | The surface rule (how speakable and readable Tamil are written) was restated in 9 prompt sites and had drifted three ways on register. It is now `language.VOICE_FORM` / `READ_FORM`, spliced everywhere; `dialect.md` keeps the register default; `s129` fails on a retyped rule | One sentence to change, no more drift | `language.audio_form` / `chat_form` |
+| **Landed 2026-10-05** | Stored romanizations (`lexicon.phonetic`) are deleted; keys are script and every surface he reads is generated (`writer.to_phonetic`), including the sort-tape push-back. This removes a false "recently shown" match (substring hits like `om` in "from") | Honest cold credit; less code (state_io 127 → 111) | Nothing to template. The read form is generated, never stored, for any language |
 | Candidate, not approved | About 20 call sites import raw script regexes (`TAMIL_RE`, `TAMIL_RUN`, `TAMIL_TAIL_RE`, `strip_pulli`) to answer three different questions. Role-named accessors (`is_canonical`, `has_target`/`target_runs`, `stem`) would make each lane name its question | Clearer lanes, a simpler `s91` | The plug point for *declare, don't detect* (§4.5) |
 | Not worth doing | Renaming `Anna`/`Andrew` identifiers, log strings and the `ANNA_PUSH_WEBHOOK_URL` secret | Churn and an outward-facing secret change for no learning benefit | Mechanical rename at W2 |
 
